@@ -36,6 +36,10 @@ namespace HRMSystem.Helpers
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (RecruitmentStatus)src.Status))
                 .ReverseMap()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status));
+            CreateMap<RecruitmentRequirement, RecruitmentRequirementDto>()
+                 .ForMember(dest => dest.PositionName, opt => opt.MapFrom(src => src.RecruitmentPositions.PositionName))
+                 .ForMember(dest => dest.EmployeeName, opt => opt.MapFrom(src => src.Employees.FullName));
+
 
             CreateMap<OvertimeRequest, OvertimeRequestDto>()
                 .ForMember(dest => dest.EmployeeName, opt => opt.MapFrom(src => src.Employees != null ? src.Employees.FullName : null))

@@ -39,7 +39,7 @@ namespace HRMSystem.Controllers
                 .FirstOrDefaultAsync(e => e.Email == login.Email);
             if (employee == null)
             {
-                return Unauthorized("Invalid email or password");
+                return BadRequest("Invalid email or password");
             }
 
             var hasher = new PasswordHasher<Employee>();
@@ -47,7 +47,7 @@ namespace HRMSystem.Controllers
 
             if (result != PasswordVerificationResult.Success)
             {
-                return Unauthorized("Invalid email or password");
+                return BadRequest("Invalid email or password");
             }
 
             var claims = new List<Claim>

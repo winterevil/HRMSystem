@@ -15,6 +15,12 @@ namespace HRMSystem.Repositories
                                  .Include(rp => rp.Departments)
                                  .ToListAsync();
         }
+        public async Task<RecruitmentPosition?> GetByIdAsync(int id)
+        {
+            return await _context.RecruitmentPositions
+                                 .Include(rp => rp.Departments)
+                                 .FirstOrDefaultAsync(rp => rp.Id == id);
+        }
 
     }
 

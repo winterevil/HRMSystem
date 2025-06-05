@@ -92,8 +92,28 @@ namespace HRMSystem.Services
                 throw new UnauthorizedAccessException("Admin account must be created by the system.");
             }
 
-            if (currentRole.Contains("Admin")) { }
-            else if (currentRole.Contains("HR") && (dto.Role == "Manager" || dto.Role == "Employee")) { }
+            if (currentRole.Contains("Admin"))
+            {
+                if (dto.Role != "HR")
+                {
+                    if (dto.DepartmentId == null || dto.EmployeeTypeId == null)
+                    {
+                        throw new InvalidOperationException("DepartmentId and EmployeeTypeId must be provided.");
+                    }
+                }
+                else
+                {
+                    dto.DepartmentId = null;
+                    dto.EmployeeTypeId = null;
+                }
+            }
+            else if (currentRole.Contains("HR") && (dto.Role == "Manager" || dto.Role == "Employee"))
+            {
+                if (dto.DepartmentId == null || dto.EmployeeTypeId == null)
+                {
+                    throw new InvalidOperationException("DepartmentId and EmployeeTypeId must be provided.");
+                }
+            }
             else if (currentRole.Contains("Manager") && (dto.Role == "Employee"))
             {
                 var creatorId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier));
@@ -101,6 +121,10 @@ namespace HRMSystem.Services
                 if (manager == null || manager.DepartmentId != dto.DepartmentId)
                 {
                     throw new UnauthorizedAccessException("Manager can only add employees in their own department.");
+                }
+                if (dto.DepartmentId == null || dto.EmployeeTypeId == null)
+                {
+                    throw new InvalidOperationException("DepartmentId and EmployeeTypeId must be provided.");
                 }
             }
             else
@@ -143,14 +167,38 @@ namespace HRMSystem.Services
             if (targetRole == "Admin")
                 throw new UnauthorizedAccessException("You are not allowed to update the Admin account.");
 
-            if (currentRoles.Contains("Admin")) { }
-            else if (currentRoles.Contains("HR") && (targetRole == "Manager" || targetRole == "Employee")) { }
+            if (currentRoles.Contains("Admin"))
+            {
+                if (dto.Role != "HR")
+                {
+                    if (dto.DepartmentId == null || dto.EmployeeTypeId == null)
+                    {
+                        throw new InvalidOperationException("DepartmentId and EmployeeTypeId must be provided.");
+                    }
+                }
+                else
+                {
+                    dto.DepartmentId = null;
+                    dto.EmployeeTypeId = null;
+                }
+            }
+            else if (currentRoles.Contains("HR") && (targetRole == "Manager" || targetRole == "Employee"))
+            {
+                if (dto.DepartmentId == null || dto.EmployeeTypeId == null)
+                {
+                    throw new InvalidOperationException("DepartmentId and EmployeeTypeId must be provided.");
+                }
+            }
             else if (currentRoles.Contains("Manager") && targetRole == "Employee")
             {
                 var currentUserId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier));
                 var manager = await _context.Employees.FindAsync(currentUserId);
                 if (manager == null || manager.DepartmentId != employee.DepartmentId)
                     throw new UnauthorizedAccessException("Managers can only update employees in their own department.");
+                if (dto.DepartmentId == null || dto.EmployeeTypeId == null)
+                {
+                    throw new InvalidOperationException("DepartmentId and EmployeeTypeId must be provided.");
+                }
             }
             else throw new UnauthorizedAccessException("You are not allowed to update this employee.");
             if (!string.IsNullOrEmpty(dto.Password))
@@ -210,8 +258,8 @@ namespace HRMSystem.Services
                 Address = employee.Address,
                 CreatedAt = employee.CreatedAt,
                 Status = (int)employee.Status,
-                DepartmentId = (int) employee.DepartmentId,
-                EmployeeTypeId = (int) employee.EmployeeTypeId,
+                DepartmentId = (int)employee.DepartmentId,
+                EmployeeTypeId = (int)employee.EmployeeTypeId,
                 DeletedAt = DateTime.UtcNow.AddHours(7),
                 DeletedById = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier))
             };

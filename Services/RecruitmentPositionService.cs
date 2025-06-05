@@ -101,7 +101,7 @@ namespace HRMSystem.Services
             {
                 throw new UnauthorizedAccessException("You do not have permission to update recruitment positions.");
             }
-            var entity = await _repo.GetByIdAsync(dto.Id);
+            var entity = _mapper.Map<RecruitmentPosition>(dto);
             if (entity == null)
             {
                 throw new InvalidOperationException("Recruitment position not found.");

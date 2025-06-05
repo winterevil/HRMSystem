@@ -17,12 +17,12 @@ namespace HRMSystem.Repositories
                 .ToListAsync();
         }
 
-        public async Task<Employee?> GetByIdAsync(int id)
+        public async Task<LeaveRequest?> GetByIdAsync(int id)
         {
-            return await _context.Employees
-                .Include(e => e.EmployeeRoles)
-                    .ThenInclude(er => er.Roles)
-                .FirstOrDefaultAsync(e => e.Id == id);
+            return await _context.LeaveRequests
+                .Include(r => r.Employees)
+                .Include(r => r.ApprovedBy)
+                .FirstOrDefaultAsync(r => r.Id == id);
         }
     }
 }

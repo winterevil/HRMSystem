@@ -43,10 +43,12 @@ namespace HRMSystem.Services
             {
                 throw new InvalidOperationException("Approver or requester not found.");
             }
-            if (approver.EmployeeRoles.Any(er => er.Roles != null && er.Roles.RoleName == "HR"))
+            if (entity.ApprovedBy != null && 
+                entity.ApprovedBy.EmployeeRoles.Any(er => er.Roles.RoleName != null && er.Roles.RoleName == "HR"))
             {
                 throw new InvalidOperationException("Overtime request has already been checked by HR.");
             }
+           
             if (currentRole.Contains("Manager"))
             {
                 if (approver.Id == requester.Id)
@@ -182,6 +184,7 @@ namespace HRMSystem.Services
                 {
                     throw new UnauthorizedAccessException("You do not have permission to view this overtime request.");
                 }
+
             }
             else
             {
