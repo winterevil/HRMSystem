@@ -72,7 +72,11 @@ namespace HRMSystem.Services
             }
             else
             {
-                employee = null;
+                employee = await _repo.GetByIdAsync(id);
+                if (employee.Id != int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0"))
+                {
+                    employee = null;
+                }
                 throw new UnauthorizedAccessException("You do not have permission to view this employee.");
             }
             if (employee == null)

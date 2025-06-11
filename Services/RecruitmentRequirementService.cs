@@ -156,11 +156,17 @@ namespace HRMSystem.Services
                 throw new InvalidOperationException("Position not found.");
             }
             entity.RecruitmentPositions = position;
-            var employee = await _employeeRepo.GetByIdAsync(int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)));
+            var employeeId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier));
+            if (employeeId == null)
+            {
+                throw new InvalidOperationException("Employee is required.");
+            }
+            var employee = await _employeeRepo.GetByIdAsync(employeeId);
             if (employee == null)
             {
                 throw new InvalidOperationException("Employee not found.");
             }
+            entity.EmployeeId = employeeId;
             entity.Employees = employee;
             entity.Status = RecruitmentStatus.Pending;
             _repo.Update(entity);

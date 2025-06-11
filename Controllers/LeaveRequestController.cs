@@ -23,7 +23,7 @@ namespace HRMSystem.Controllers
             try
             {
                 await _service.ApproveAsync(id, status, User);
-                return Ok(new { message = "Overtime request approved successfully." });
+                return Ok("Leave request processed");
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -86,7 +86,7 @@ namespace HRMSystem.Controllers
             try
             {
                 await _service.CreateAsync(dto, User);
-                return CreatedAtAction(nameof(GetById), new { id = dto.Id }, dto);
+                return Ok("Leave request created");
             }
             catch (UnauthorizedAccessException ex)
             {

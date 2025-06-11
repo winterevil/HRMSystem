@@ -48,7 +48,7 @@ namespace HRMSystem.Controllers
             try
             {
                 await _service.CreateAsync(dto, User);
-                return CreatedAtAction(nameof(GetById), new { id = dto.Id }, dto);
+                return Ok("Job post created");
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -68,8 +68,9 @@ namespace HRMSystem.Controllers
         {
             try
             {
+                dto.Id = id;
                 await _service.UpdateAsync(dto, User);
-                return Ok();
+                return Ok("Job post updated");
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -90,7 +91,7 @@ namespace HRMSystem.Controllers
             try
             {
                 await _service.DeleteAsync(id, User);
-                return NoContent();
+                return Ok("Job post deleted");
             }
             catch (UnauthorizedAccessException ex)
             {

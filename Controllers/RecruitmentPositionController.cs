@@ -64,7 +64,7 @@ namespace HRMSystem.Controllers
             try
             {
                 await _service.CreateAsync(dto, User);
-                return Ok();
+                return Ok("Recruitment position created");
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -85,7 +85,7 @@ namespace HRMSystem.Controllers
             try
             {
                 await _service.UpdateAsync(dto, User);
-                return Ok();
+                return Ok("Recruitment position updated");
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -106,7 +106,7 @@ namespace HRMSystem.Controllers
             try
             {
                 await _service.DeleteAsync(id, User);
-                return Ok();
+                return Ok("Recruitment position deleted");
             }
             catch (UnauthorizedAccessException ex)
             {

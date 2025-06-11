@@ -66,7 +66,7 @@ namespace HRMSystem.Controllers
             try
             {
                 await _service.CreateAsync(dto, User);
-                return Ok();
+                return Ok("Employee type created");
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -88,7 +88,7 @@ namespace HRMSystem.Controllers
             try
             {
                 await _service.UpdateAsync(dto, User);
-                return Ok();
+                return Ok("Employee type updated");
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -110,7 +110,7 @@ namespace HRMSystem.Controllers
             try
             {
                 await _service.DeleteAsync(id, User);
-                return Ok();
+                return Ok("Employee type deleted");
             }
             catch (UnauthorizedAccessException ex)
             {

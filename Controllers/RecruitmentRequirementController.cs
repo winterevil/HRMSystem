@@ -65,7 +65,7 @@ namespace HRMSystem.Controllers
             try
             {
                 await _service.CreateAsync(dto, User);
-                return CreatedAtAction(nameof(GetById), new { id = dto.Id }, dto);
+                return Ok("Recruitment requirement created");
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -86,7 +86,7 @@ namespace HRMSystem.Controllers
             try
             {
                 await _service.ApproveAsync(id, status, User);
-                return NoContent();
+                return Ok("Recruitment requirement processed");
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -108,7 +108,7 @@ namespace HRMSystem.Controllers
             {
                 dto.Id = id;
                 await _service.UpdateAsync(dto, User);
-                return NoContent();
+                return Ok("Recruitment requirement updated");
             }
             catch (UnauthorizedAccessException ex)
             {
