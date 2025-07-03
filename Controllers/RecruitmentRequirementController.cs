@@ -80,7 +80,7 @@ namespace HRMSystem.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
-        [HttpPut("{id}/approve")]
+        [HttpPost("approve/{id}")]
         public async Task<IActionResult> Approve(int id, [FromBody] RecruitmentStatus status)
         {
             try

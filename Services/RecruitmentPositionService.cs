@@ -65,7 +65,7 @@ namespace HRMSystem.Services
         public async Task<IEnumerable<RecruitmentPositionDto>> GetAllAsync(ClaimsPrincipal user)
         {
             var currentRole = user.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
-            if (!currentRole.Contains("HR"))
+            if (!currentRole.Contains("HR") && !currentRole.Contains("Manager"))
             {
                 throw new UnauthorizedAccessException("You do not have permission to view recruitment positions.");
             }
@@ -81,7 +81,7 @@ namespace HRMSystem.Services
         public async Task<RecruitmentPositionDto?> GetByIdAsync(int id, ClaimsPrincipal user)
         {
             var currentRole = user.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
-            if (!currentRole.Contains("HR"))
+            if (!currentRole.Contains("HR") && !currentRole.Contains("Manager"))
             {
                 throw new UnauthorizedAccessException("You do not have permission to view recruitment positions.");
             }

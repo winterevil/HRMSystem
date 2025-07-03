@@ -42,8 +42,13 @@ namespace HRMSystem.Services
             }
             else
             {
-                employees = Enumerable.Empty<Employee>();
-                throw new UnauthorizedAccessException("You do not have permission to view this employee.");
+                var currentId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
+                var employee = await _repo.GetByIdAsync(currentId);
+                if (employee == null)
+                {
+                    throw new InvalidOperationException("Employee not found.");
+                }
+                employees = new List<Employee> { employee }; 
             }
 
             if (employees == null || !employees.Any())
