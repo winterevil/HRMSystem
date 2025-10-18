@@ -32,6 +32,11 @@ namespace HRMSystem.Services
             {
                 throw new InvalidOperationException("Overtime request not found.");
             }
+            if (entity.Status == OvertimeStatus.Cancelled)
+            {
+                throw new InvalidOperationException("Cancelled overtime requests cannot be approved or rejected.");
+            }
+
             if (entity.Status != OvertimeStatus.Pending && currentRole.Contains("Manager"))
             {
                 throw new InvalidOperationException("Overtime request is not in a state that can be updated.");
@@ -43,11 +48,18 @@ namespace HRMSystem.Services
             {
                 throw new InvalidOperationException("Approver or requester not found.");
             }
-            if (entity.ApprovedBy != null &&
-                entity.ApprovedBy.EmployeeRoles.Any(er => er.Roles.RoleName != null && er.Roles.RoleName == "HR"))
+            if (currentRole.Contains("HR"))
             {
-                throw new InvalidOperationException("Overtime request has already been checked by HR.");
+                if (entity.ApprovedById != null)
+                {
+                    var approverUser = await _employeeRepo.GetByIdAsync(entity.ApprovedById.Value);
+                    if (approverUser != null && approverUser.EmployeeRoles.Any(er => er.Roles.RoleName == "HR"))
+                    {
+                        throw new InvalidOperationException("Overtime request has already been checked by HR.");
+                    }
+                }
             }
+
             if (currentRole.Contains("Manager"))
             {
                 if (approver.Id == requester.Id)
@@ -64,7 +76,7 @@ namespace HRMSystem.Services
                 {
                     throw new UnauthorizedAccessException("You can only approve overtime requests from your own department.");
                 }
-                entity.ApprovedBy = approver;
+                entity.ApprovedById = approver.Id;
                 entity.Status = status;
             }
 
@@ -73,8 +85,8 @@ namespace HRMSystem.Services
                 if (status == OvertimeStatus.Pending)
                 {
                     throw new InvalidOperationException("HR cannot set the status to Pending.");
-                }   
-                entity.ApprovedBy = approver;
+                }
+                entity.ApprovedById = approver.Id;
                 entity.Status = status;
             }
 
@@ -93,6 +105,15 @@ namespace HRMSystem.Services
             if (entity == null)
             {
                 throw new InvalidOperationException("Failed to create overtime request.");
+            }
+            if (entity.StartTime >= entity.EndTime)
+            {
+                throw new InvalidOperationException("Start time must be before end time.");
+            }
+
+            if (entity.StartTime < DateTime.Now || entity.EndTime < DateTime.Now)
+            {
+                throw new InvalidOperationException("Overtime request times must be in the future.");
             }
             int employeeId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
             var employee = await _employeeRepo.GetByIdAsync(employeeId);
@@ -196,9 +217,48 @@ namespace HRMSystem.Services
             return _mapper.Map<OvertimeRequestDto>(request);
         }
 
-        public Task UpdateAsync(OvertimeRequestDto dto, ClaimsPrincipal user)
+        public async Task UpdateAsync(OvertimeRequestDto dto, ClaimsPrincipal user)
         {
-            throw new NotImplementedException();
+            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var entity = await _repo.GetByIdAsync(dto.Id);
+            if (entity == null)
+            {
+                throw new InvalidOperationException("Overtime request not found.");
+            }
+
+            if (entity.EmployeeId != userId)
+            {
+                throw new UnauthorizedAccessException("You do not have permission to update this overtime request.");
+            }
+
+            if (entity.Status != OvertimeStatus.Pending)
+            {
+                throw new InvalidOperationException("Only pending overtime requests can be updated.");
+            }
+
+            if (dto.StartTime >= dto.EndTime)
+            {
+                throw new InvalidOperationException("Start time must be before end time.");
+            }
+            if (dto.StartTime < DateTime.Now || dto.EndTime < DateTime.Now)
+            {
+                throw new InvalidOperationException("Overtime request times must be in the future.");
+            }
+            entity.StartTime = dto.StartTime;
+            entity.EndTime = dto.EndTime;
+            entity.Reason = dto.Reason;
+            if (dto.Status != OvertimeStatus.Cancelled && dto.Status != OvertimeStatus.Pending)
+            {
+                throw new InvalidOperationException("You can only change the status to Cancelled.");
+            }
+
+            if (dto.Status == OvertimeStatus.Cancelled)
+            {
+                entity.Status = OvertimeStatus.Cancelled;
+            }
+
+            _repo.Update(entity);
+            await _repo.SaveChangesAsync();
         }
     }
 }

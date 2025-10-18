@@ -23,6 +23,7 @@ namespace HRMSystem.Services
         public async Task<IEnumerable<EmployeeDto>> GetAllAsync(EmployeeDto dto, ClaimsPrincipal user)
         {
             var currentRole = user.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
+
             IEnumerable<Employee> employees;
             if (currentRole.Contains("Admin") || currentRole.Contains("HR"))
             {
@@ -44,11 +45,12 @@ namespace HRMSystem.Services
             {
                 var currentId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
                 var employee = await _repo.GetByIdAsync(currentId);
+
                 if (employee == null)
                 {
                     throw new InvalidOperationException("Employee not found.");
                 }
-                employees = new List<Employee> { employee }; 
+                employees = new List<Employee> { employee };
             }
 
             if (employees == null || !employees.Any())
@@ -95,8 +97,10 @@ namespace HRMSystem.Services
         public async Task CreateAsync(EmployeeCreateDto dto, ClaimsPrincipal user)
         {
             var currentRole = user.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
+            var adminDept = await _context.Departments
+                .FirstAsync(d => d.DepartmentName == "Administration");
 
-            if (dto.Role == "Admin")
+            if (dto.RoleId == 1)
             {
                 throw new UnauthorizedAccessException("Admin account must be created by the system.");
             }
@@ -112,8 +116,14 @@ namespace HRMSystem.Services
                 }
                 else
                 {
-                    dto.DepartmentId = null;
-                    dto.EmployeeTypeId = null;
+                    if (dto.DepartmentId != adminDept.Id)
+                    {
+                        throw new InvalidOperationException("HR must belong to the Administration.");
+                    }
+                    if (dto.EmployeeTypeId == null)
+                    {
+                        throw new InvalidOperationException("EmployeeTypeId must be provided.");
+                    }
                 }
             }
             else if (currentRole.Contains("HR") && (dto.Role == "Manager" || dto.Role == "Employee"))
@@ -145,10 +155,11 @@ namespace HRMSystem.Services
             {
                 throw new InvalidOperationException("Email already exists.");
             }
+
             var employee = _mapper.Map<Employee>(dto);
             employee.HashPassword = new PasswordHasher<Employee>().HashPassword(employee, dto.Password);
             employee.CreatedAt = DateTime.UtcNow.AddHours(7);
-
+            
             await _repo.AddAsync(employee);
             await _repo.SaveChangesAsync();
 
@@ -167,6 +178,8 @@ namespace HRMSystem.Services
         {
             var employee = await _repo.GetByIdAsync(dto.Id);
             if (employee == null) return;
+            var adminDept = await _context.Departments
+                .FirstAsync(d => d.DepartmentName == "Administration");
 
             var currentRoles = user.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
             var role = await _context.EmployeeRoles.Include(r => r.Roles)
@@ -187,8 +200,14 @@ namespace HRMSystem.Services
                 }
                 else
                 {
-                    dto.DepartmentId = null;
-                    dto.EmployeeTypeId = null;
+                    if (dto.DepartmentId != adminDept.Id)
+                    {
+                        throw new InvalidOperationException("HR must belong to the Administration.");
+                    }
+                    if (dto.EmployeeTypeId == null)
+                    {
+                        throw new InvalidOperationException("EmployeeTypeId must be provided.");
+                    }
                 }
             }
             else if (currentRoles.Contains("HR") && (targetRole == "Manager" || targetRole == "Employee"))

@@ -101,5 +101,27 @@ namespace HRMSystem.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
+
+        [HttpPut]
+        public async Task<IActionResult> Update([FromBody] OvertimeRequestDto dto)
+        {
+            try
+            {
+                await _service.UpdateAsync(dto, User);
+                return Ok("Overtime request updated");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
     }
 }

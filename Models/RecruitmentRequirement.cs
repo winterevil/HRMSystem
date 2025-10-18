@@ -8,7 +8,7 @@ namespace HRMSystem.Models
         Pending = 0,
         Approved = 1,
         Rejected = 2,
-        Filled = 3,
+        Completed = 3,
         Cancelled = 4
     }
     public class RecruitmentRequirement

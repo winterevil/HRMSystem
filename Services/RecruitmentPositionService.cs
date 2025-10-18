@@ -3,6 +3,7 @@ using AutoMapper;
 using HRMSystem.DTOs;
 using HRMSystem.Models;
 using HRMSystem.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace HRMSystem.Services
 {
@@ -22,6 +23,7 @@ namespace HRMSystem.Services
             {
                 throw new UnauthorizedAccessException("You do not have permission to create recruitment positions.");
             }
+
             var entity = _mapper.Map<RecruitmentPosition>(dto);
 
             if (entity == null)

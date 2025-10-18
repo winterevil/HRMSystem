@@ -133,44 +133,132 @@ namespace HRMSystem.Services
             return _mapper.Map<RecruitmentRequirementDto>(requirement);
         }
 
+        //public async Task UpdateAsync(RecruitmentRequirementDto dto, ClaimsPrincipal user)
+        //{
+        //    var currentRole = user.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
+        //    if (!currentRole.Contains("Manager"))
+        //    {
+        //        throw new UnauthorizedAccessException("You do not have permission to update recruitment requirements.");
+        //    }
+        //    var entity = await _repo.GetByIdAsync(dto.Id);
+        //    if (entity == null)
+        //    {
+        //        throw new InvalidOperationException("Recruitment requirement not found.");
+        //    }
+        //    if (entity.Status != RecruitmentStatus.Pending)
+        //    {
+        //        throw new InvalidOperationException("Recruitment requirement is not in a state that can be updated.");
+        //    }
+        //    _mapper.Map(dto, entity);
+        //    var position = await _positionRepo.GetByIdAsync(dto.PositionId);
+        //    if (position == null)
+        //    {
+        //        throw new InvalidOperationException("Position not found.");
+        //    }
+        //    entity.RecruitmentPositions = position;
+        //    var employeeId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier));
+        //    if (employeeId == null)
+        //    {
+        //        throw new InvalidOperationException("Employee is required.");
+        //    }
+        //    var employee = await _employeeRepo.GetByIdAsync(employeeId);
+        //    if (employee == null)
+        //    {
+        //        throw new InvalidOperationException("Employee not found.");
+        //    }
+        //    entity.EmployeeId = employeeId;
+        //    entity.Employees = employee;
+        //    entity.Status = RecruitmentStatus.Pending;
+        //    _repo.Update(entity);
+        //    await _repo.SaveChangesAsync();
+        //}
         public async Task UpdateAsync(RecruitmentRequirementDto dto, ClaimsPrincipal user)
         {
             var currentRole = user.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
-            if (!currentRole.Contains("Manager"))
-            {
-                throw new UnauthorizedAccessException("You do not have permission to update recruitment requirements.");
-            }
+            var employeeId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier));
+
             var entity = await _repo.GetByIdAsync(dto.Id);
             if (entity == null)
             {
                 throw new InvalidOperationException("Recruitment requirement not found.");
             }
-            if (entity.Status != RecruitmentStatus.Pending)
+
+            if (!currentRole.Contains("Manager") && !currentRole.Contains("HR"))
             {
-                throw new InvalidOperationException("Recruitment requirement is not in a state that can be updated.");
+                throw new UnauthorizedAccessException("You do not have permission to update recruitment requirements.");
             }
-            _mapper.Map(dto, entity);
-            var position = await _positionRepo.GetByIdAsync(dto.PositionId);
-            if (position == null)
+
+            if (entity.Status == RecruitmentStatus.Rejected ||
+                entity.Status == RecruitmentStatus.Cancelled ||
+                entity.Status == RecruitmentStatus.Completed)
             {
-                throw new InvalidOperationException("Position not found.");
+                throw new InvalidOperationException("Recruitment requirement cannot be updated in its current state.");
             }
-            entity.RecruitmentPositions = position;
-            var employeeId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier));
-            if (employeeId == null)
+
+            if ((RecruitmentStatus)dto.Status == RecruitmentStatus.Cancelled)
             {
-                throw new InvalidOperationException("Employee is required.");
+                if (!currentRole.Contains("Manager") && !currentRole.Contains("HR"))
+                {
+                    throw new UnauthorizedAccessException("Only Manager or HR can cancel a recruitment requirement.");
+                }
+
+                entity.Status = RecruitmentStatus.Cancelled;
+                _repo.Update(entity);
+                await _repo.SaveChangesAsync();
+                return;
             }
-            var employee = await _employeeRepo.GetByIdAsync(employeeId);
-            if (employee == null)
+
+            if ((RecruitmentStatus)dto.Status == RecruitmentStatus.Completed)
             {
-                throw new InvalidOperationException("Employee not found.");
+                if (!currentRole.Contains("HR"))
+                {
+                    throw new UnauthorizedAccessException("Only HR can mark a recruitment requirement as filled.");
+                }
+
+                if (entity.Status != RecruitmentStatus.Approved)
+                {
+                    throw new InvalidOperationException("Only approved recruitment requirements can be marked as filled.");
+                }
+
+                entity.Status = RecruitmentStatus.Completed;
+                _repo.Update(entity);
+                await _repo.SaveChangesAsync();
+                return;
             }
-            entity.EmployeeId = employeeId;
-            entity.Employees = employee;
-            entity.Status = RecruitmentStatus.Pending;
-            _repo.Update(entity);
-            await _repo.SaveChangesAsync();
+
+            if (entity.Status == RecruitmentStatus.Pending)
+            {
+                if (!currentRole.Contains("Manager"))
+                {
+                    throw new UnauthorizedAccessException("Only Manager can edit pending recruitment requirements.");
+                }
+
+                _mapper.Map(dto, entity);
+
+                var position = await _positionRepo.GetByIdAsync(dto.PositionId);
+                if (position == null)
+                {
+                    throw new InvalidOperationException("Position not found.");
+                }
+
+                var employee = await _employeeRepo.GetByIdAsync(employeeId);
+                if (employee == null)
+                {
+                    throw new InvalidOperationException("Employee not found.");
+                }
+
+                entity.RecruitmentPositions = position;
+                entity.EmployeeId = employeeId;
+                entity.Employees = employee;
+                entity.Status = RecruitmentStatus.Pending;
+
+                _repo.Update(entity);
+                await _repo.SaveChangesAsync();
+            }
+            else
+            {
+                throw new InvalidOperationException("Only pending or approved recruitment requirements can be updated.");
+            }
         }
     }
 }

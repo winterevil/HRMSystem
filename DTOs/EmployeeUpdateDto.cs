@@ -13,6 +13,7 @@ namespace HRMSystem.DTOs
         public string Phone { get; set; }
         public string Address { get; set; }
         public string Role { get; set; }
+        public int RoleId { get; set; }
         public int? DepartmentId { get; set; }
         public int? EmployeeTypeId { get; set; }
         public EmployeeStatus Status { get; set; }

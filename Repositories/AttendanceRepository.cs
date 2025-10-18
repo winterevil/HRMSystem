@@ -23,6 +23,14 @@ namespace HRMSystem.Repositories
                 .Include(a => a.Employees)
                 .FirstOrDefaultAsync(a => a.EmployeeId == employeeId && a.CheckinDate == date);
         }
+
+        public async Task<IEnumerable<Attendance>> GetPendingCheckoutsBeforeAsync(DateTime date)
+        {
+            return await _context.Attendance
+                .Where(a => a.CheckoutTime == null && a.CheckinDate < date)
+                .ToListAsync();
+        }
+
     }
-    
+
 }

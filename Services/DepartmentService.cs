@@ -8,16 +8,16 @@ using HRMSystem.Repositories;
 
 namespace HRMSystem.Services
 {
-    public class EmployeeTypeService:IEmployeeTypeService
+    public class DepartmentService:IDepartmentService
     {
-        private readonly IEmployeeTypeRepository _repo;
+        private readonly IDepartmentRepository _repo;
         private readonly IMapper _mapper;
-        public EmployeeTypeService(IEmployeeTypeRepository repo, IMapper mapper)
+        public DepartmentService(IDepartmentRepository repo, IMapper mapper)
         {
             _repo = repo;
             _mapper = mapper;
         }
-        public async Task<IEnumerable<EmployeeTypeDto>> GetAllAsync(ClaimsPrincipal user)
+        public async Task<IEnumerable<DepartmentDto>> GetAllAsync(ClaimsPrincipal user)
         {
             var currentRole = user.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
             //if (!currentRole.Contains("HR") && !currentRole.Contains("Admin"))
@@ -25,65 +25,65 @@ namespace HRMSystem.Services
             //   throw new UnauthorizedAccessException("You do not have permission to view employee types.");
             //}
 
-            var types = await _repo.GetAllAsync();
+            var departments = await _repo.GetAllAsync();
 
-            if (types == null || !types.Any())
+            if (departments == null || !departments.Any())
             {
-                throw new InvalidOperationException("No employee type found.");
+                throw new InvalidOperationException("No department found.");
             }
 
-            return _mapper.Map<IEnumerable<EmployeeTypeDto>>(types);
+            return _mapper.Map<IEnumerable<DepartmentDto>>(departments);
         }
 
-        public async Task<EmployeeTypeDto?> GetByIdAsync(int id, ClaimsPrincipal user)
+        public async Task<DepartmentDto?> GetByIdAsync(int id, ClaimsPrincipal user)
         {
             var currentRole = user.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
             if (!currentRole.Contains("HR"))
             {
-                throw new UnauthorizedAccessException("You do not have permission to view employee types.");
+                throw new UnauthorizedAccessException("You do not have permission to view departments.");
             }
 
             var entity = await _repo.GetByIdAsync(id);
 
             if (entity == null)
             {
-                throw new InvalidOperationException("Employee type not found.");
+                throw new InvalidOperationException("Department not found.");
             }
-            return _mapper.Map<EmployeeTypeDto>(entity);
+            return _mapper.Map<DepartmentDto>(entity);
         }
-        public async Task CreateAsync(EmployeeTypeDto dto, ClaimsPrincipal user)
+        public async Task CreateAsync(DepartmentDto dto, ClaimsPrincipal user)
         {
             var currentRole = user.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
             if (!currentRole.Contains("HR"))
             {
-                throw new UnauthorizedAccessException("You do not have permission to create employee types.");
+                throw new UnauthorizedAccessException("You do not have permission to create departments.");
             }
-            var types = await _repo.GetAllAsync();
-            var entity = _mapper.Map<EmployeeType>(dto);
+            var departments = await _repo.GetAllAsync();
+            var entity = _mapper.Map<Department>(dto);
             if (entity == null)
             {
-                throw new InvalidOperationException("Employee type not found.");
+                throw new InvalidOperationException("Department not found.");
             }
-            if (types.Any(t => t.TypeName == entity.TypeName))
+            if (departments.Any(t => t.DepartmentName == entity.DepartmentName))
             {
-                throw new InvalidOperationException("Employee type already exists.");
+                throw new InvalidOperationException("Department already exists.");
             }
 
             entity.CreatedAt = DateTime.UtcNow.AddHours(7);
             await _repo.AddAsync(entity);
             await _repo.SaveChangesAsync();
         }
-        public async Task UpdateAsync(EmployeeTypeDto dto, ClaimsPrincipal user)
+        public async Task UpdateAsync(DepartmentDto dto, ClaimsPrincipal user)
         {
             var currentRole = user.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
             if (!currentRole.Contains("HR"))
             {
-                throw new UnauthorizedAccessException("You do not have permission to update employee types.");
+                throw new UnauthorizedAccessException("You do not have permission to update departments.");
             }
-            var entity = _mapper.Map<EmployeeType>(dto);
+            var entity = _mapper.Map<Department>(dto);
             if (entity == null)
             {
-                throw new InvalidOperationException("Employee type not found.");
+                throw new InvalidOperationException("Department not found.");
             }
 
             _repo.Update(entity);
@@ -94,18 +94,18 @@ namespace HRMSystem.Services
             var currentRole = user.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
             if (!currentRole.Contains("HR"))
             {
-                throw new UnauthorizedAccessException("You do not have permission to delete employee types.");
+                throw new UnauthorizedAccessException("You do not have permission to delete departments.");
             }
             var entity = await _repo.GetByIdAsync(id);
             if (entity == null)
             {
-                throw new InvalidOperationException("Employee type not found.");
+                throw new InvalidOperationException("Department not found.");
             }
 
-            var deleted = new DeletedEmployeeType
+            var deleted = new DeletedDepartment
             {
                 Id = entity.Id,
-                TypeName = entity.TypeName,
+                DepartmentName = entity.DepartmentName,
                 CreatedAt = entity.CreatedAt,
                 DeletedAt = DateTime.UtcNow.AddHours(7),
                 DeletedById = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier))

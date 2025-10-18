@@ -5,6 +5,7 @@ namespace HRMSystem.Services
 {
     public interface IAttendanceService
     {
+        Task AutoCheckoutPendingAsync();
         Task CheckinAsync(ClaimsPrincipal user);
         Task CheckoutAsync(ClaimsPrincipal user);
         Task<IEnumerable<AttendanceDto>> GetAllAsync(ClaimsPrincipal user);

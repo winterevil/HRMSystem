@@ -32,6 +32,10 @@ namespace HRMSystem.Services
             {
                 throw new InvalidOperationException("Leave request not found.");
             }
+            if (entity.Status == LeaveStatus.Cancelled)
+            {
+                throw new InvalidOperationException("Cancelled leave requests cannot be approved or rejected.");
+            }
             if (entity.Status != LeaveStatus.Pending && currentRole.Contains("Manager"))
             {
                 throw new InvalidOperationException("Leave request is not in a state that can be updated.");
@@ -43,12 +47,18 @@ namespace HRMSystem.Services
             {
                 throw new InvalidOperationException("Approver or requester not found.");
             }
-            if (entity.ApprovedBy != null && 
-                entity.ApprovedBy.EmployeeRoles.Any(er => er.Roles.RoleName != null && er.Roles.RoleName == "HR"))
+            if (currentRole.Contains("HR"))
             {
-                throw new InvalidOperationException("Leave request has already been checked by HR.");
+                if (entity.ApprovedById != null)
+                {
+                    var approverUser = await _employeeRepo.GetByIdAsync(entity.ApprovedById.Value);
+                    if (approverUser != null && approverUser.EmployeeRoles.Any(er => er.Roles.RoleName == "HR"))
+                    {
+                        throw new InvalidOperationException("Leave request has already been checked by HR.");
+                    }
+                }
             }
-           
+
             if (currentRole.Contains("Manager"))
             {
                 if (approver.Id == requester.Id)
@@ -65,7 +75,7 @@ namespace HRMSystem.Services
                 {
                     throw new UnauthorizedAccessException("You can only approve leave requests from your own department.");
                 }
-                entity.ApprovedBy = approver;
+                entity.ApprovedById = approver.Id;
                 entity.Status = status;
             }
 
@@ -75,7 +85,7 @@ namespace HRMSystem.Services
                 {
                     throw new InvalidOperationException("HR cannot set the status to Pending.");
                 }
-                entity.ApprovedBy = approver;
+                entity.ApprovedById = approver.Id;
                 entity.Status = status;
             }
 
@@ -94,6 +104,15 @@ namespace HRMSystem.Services
             if (entity == null)
             {
                 throw new InvalidOperationException("Failed to create leave request.");
+            }
+            if (entity.StartTime >= entity.EndTime)
+            {
+                throw new InvalidOperationException("Start time must be before end time.");
+            }
+
+            if (entity.StartTime < DateTime.Now || entity.EndTime < DateTime.Now)
+            {
+                throw new InvalidOperationException("Leave request times must be in the future.");
             }
             int employeeId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
             var employee = await _employeeRepo.GetByIdAsync(employeeId);
@@ -198,9 +217,48 @@ namespace HRMSystem.Services
             return _mapper.Map<LeaveRequestDto>(request);
         }
 
-        public Task UpdateAsync(LeaveRequestDto dto, ClaimsPrincipal user)
+        public async Task UpdateAsync(LeaveRequestDto dto, ClaimsPrincipal user)
         {
-            throw new NotImplementedException();
+            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var entity = await _repo.GetByIdAsync(dto.Id);
+            if (entity == null)
+            {
+                throw new InvalidOperationException("Leave request not found.");
+            }
+
+            if (entity.EmployeeId != userId)
+            {
+                throw new UnauthorizedAccessException("You do not have permission to update this leave request.");
+            }
+
+            if (entity.Status != LeaveStatus.Pending)
+            {
+                throw new InvalidOperationException("Only pending leave requests can be updated.");
+            }
+
+            if (dto.StartTime >= dto.EndTime)
+            {
+                throw new InvalidOperationException("Start time must be before end time.");
+            }
+            if (dto.StartTime < DateTime.Now || dto.EndTime < DateTime.Now)
+            {
+                throw new InvalidOperationException("Leave request times must be in the future.");
+            }
+            entity.StartTime = dto.StartTime;
+            entity.EndTime = dto.EndTime;
+            entity.Reason = dto.Reason;
+            if (dto.Status != LeaveStatus.Cancelled && dto.Status != LeaveStatus.Pending)
+            {
+                throw new InvalidOperationException("You can only change the status to Cancelled.");
+            }
+
+            if (dto.Status == LeaveStatus.Cancelled)
+            {
+                entity.Status = LeaveStatus.Cancelled;
+            }
+
+            _repo.Update(entity);
+            await _repo.SaveChangesAsync();
         }
     }
 }

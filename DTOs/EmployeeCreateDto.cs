@@ -15,6 +15,7 @@ namespace HRMSystem.DTOs
         [JsonIgnore]
         public DateTime CreatedAt { get; set; }
         public string Role { get; set; }
+        public int RoleId { get; set; }
         public int? DepartmentId { get; set; }
         public int? EmployeeTypeId { get; set; }
         public EmployeeStatus Status { get; set; }

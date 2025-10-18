@@ -42,15 +42,20 @@ namespace HRMSystem.Services
 
             if (exist != null) return;
 
+            var department = await context.Departments
+                .FirstAsync(d => d.DepartmentName == "Administration");
             var hasher = new PasswordHasher<Employee>();
             var admin = new Employee
             {
                 FullName = "Admin",
                 Email = email,
                 HashPassword = hasher.HashPassword(null, password),
-                Gender = "Default Admin Gender",
-                Address = "Default Admin Address",
-                Phone = "Default Admin Phone",
+                Gender = "Other",
+                DOB = DateTime.UtcNow.AddYears(-20),
+                DepartmentId = department.Id,
+                EmployeeTypeId = 1,
+                Address = "Administration",
+                Phone = "0123456789",
                 CreatedAt = DateTime.UtcNow.AddHours(7),
                 Status = EmployeeStatus.Active,
             };
@@ -67,5 +72,22 @@ namespace HRMSystem.Services
             await context.SaveChangesAsync();
         }
 
+
+        public static async Task SeedDepartmentAsync(AppDbContext context)
+        {
+            var adminDeptName = "Administration";
+
+            var exist = await context.Departments.FirstOrDefaultAsync(d => d.DepartmentName == adminDeptName);
+
+            if (exist == null)
+            {
+                context.Departments.Add(new Department
+                {
+                    DepartmentName = adminDeptName,
+                    CreatedAt = DateTime.UtcNow.AddHours(7)
+                });
+                await context.SaveChangesAsync();
+            }
+        }
     }
 }

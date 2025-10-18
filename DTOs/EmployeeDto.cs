@@ -1,4 +1,6 @@
-﻿namespace HRMSystem.DTOs
+﻿using HRMSystem.Models;
+
+namespace HRMSystem.DTOs
 {
     public class EmployeeDto
     {
@@ -11,10 +13,12 @@
         public string Phone { get; set; }
         public string Address { get; set; }
         public DateTime CreatedAt { get; set; }
-        public string Role { get; set; }
+        public int RoleId { get; set; }
+        public string RoleName { get; set; }
         public string DepartmentName { get; set; }
         public string TypeName { get; set; }
-        public string Status { get; set; }
+        public EmployeeStatus Status { get; set; }
         public int DepartmentId { get; set; } 
+        public int EmployeeTypeId { get; set; }
     }
 }

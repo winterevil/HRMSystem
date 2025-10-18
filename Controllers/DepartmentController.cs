@@ -1,18 +1,16 @@
-﻿using HRMSystem.DTOs;
+﻿using HRMSystem.Data;
+using HRMSystem.DTOs;
 using HRMSystem.Services;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HRMSystem.Controllers
 {
-    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
-    public class EmployeeController : ControllerBase
+    public class DepartmentController : ControllerBase
     {
-        private readonly IEmployeeService _service;
-        public EmployeeController(IEmployeeService service)
+        private readonly IDepartmentService _service;
+        public DepartmentController(IDepartmentService service)
         {
             _service = service;
         }
@@ -22,8 +20,8 @@ namespace HRMSystem.Controllers
         {
             try
             {
-                var employees = await _service.GetAllAsync(new EmployeeDto(), User);
-                return Ok(employees);
+                var departments = await _service.GetAllAsync(User);
+                return Ok(departments);
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -44,8 +42,8 @@ namespace HRMSystem.Controllers
         {
             try
             {
-                var employee = await _service.GetByIdAsync(id, new EmployeeDto(), User);
-                return Ok(employee);
+                var result = await _service.GetByIdAsync(id, User);
+                return Ok(result);
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -62,12 +60,12 @@ namespace HRMSystem.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] EmployeeCreateDto employeeDto)
+        public async Task<IActionResult> Create([FromBody] DepartmentDto dto)
         {
             try
             {
-                await _service.CreateAsync(employeeDto, User);
-                return Ok("Employee created successfully");
+                await _service.CreateAsync(dto, User);
+                return Ok("Department created");
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -84,12 +82,12 @@ namespace HRMSystem.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> Update(EmployeeUpdateDto employeeDto)
+        public async Task<IActionResult> Update(DepartmentDto dto)
         {
             try
             {
-                await _service.UpdateAsync(employeeDto, User);
-                return Ok("Employee updated successfully");
+                await _service.UpdateAsync(dto, User);
+                return Ok("Department updated");
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -110,8 +108,8 @@ namespace HRMSystem.Controllers
         {
             try
             {
-                await _service.DeleteAsync(id, new EmployeeDto(), User);
-                return Ok("Employee deleted successfully");
+                await _service.DeleteAsync(id, User);
+                return Ok("Department deleted");
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -127,4 +125,5 @@ namespace HRMSystem.Controllers
             }
         }
     }
+
 }

@@ -17,6 +17,23 @@ namespace HRMSystem.Services
             _mapper = mapper;
             _employeeRepo = employeeRepo;
         }
+
+        public async Task AutoCheckoutPendingAsync()
+        {
+            var pendingAttendances = await _repo.GetPendingCheckoutsBeforeAsync(DateTime.Today);
+
+            if (pendingAttendances == null || !pendingAttendances.Any())
+                return;
+
+            foreach (var a in pendingAttendances)
+            {
+                a.CheckoutTime = a.CheckinDate.AddDays(1).AddSeconds(-1);
+                _repo.Update(a);
+            }
+
+            await _repo.SaveChangesAsync();
+        }
+
         public async Task CheckinAsync(ClaimsPrincipal user)
         {
             var currentRole = user.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();

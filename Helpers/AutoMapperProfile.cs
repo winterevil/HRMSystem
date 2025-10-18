@@ -9,7 +9,12 @@ namespace HRMSystem.Helpers
         public AutoMapperProfile()
         {
             CreateMap<EmployeeType, EmployeeTypeDto>().ReverseMap();
+            CreateMap<Department, DepartmentDto>().ReverseMap();
             CreateMap<EmployeeCreateDto, Employee>()
+                .ForMember(dest => dest.DepartmentId,
+                    opt => opt.MapFrom(src => src.DepartmentId))
+                .ForMember(dest => dest.EmployeeTypeId,
+                    opt => opt.MapFrom(src => src.EmployeeTypeId))
                 .ForMember(dest => dest.Status,
                     opt => opt.MapFrom(src => src.Status));
 
@@ -21,11 +26,17 @@ namespace HRMSystem.Helpers
                 .ForMember(dest => dest.Status,
                     opt => opt.MapFrom(src => src.Status.ToString()))
                 .ForMember(dest => dest.DepartmentName,
-                    opt => opt.MapFrom(src => src.Departments.DepartmentName))
+                    opt => opt.MapFrom(src => src.Departments != null ? src.Departments.DepartmentName : null))
                 .ForMember(dest => dest.TypeName,
-                    opt => opt.MapFrom(src => src.EmployeeTypes.TypeName))
-                .ForMember(dest => dest.Role,
-                    opt => opt.MapFrom(src => src.EmployeeRoles.FirstOrDefault().Roles.RoleName));
+                    opt => opt.MapFrom(src => src.EmployeeTypes != null ? src.EmployeeTypes.TypeName : null))
+                .ForMember(dest => dest.RoleName,
+                    opt => opt.MapFrom(src => src.EmployeeRoles.FirstOrDefault() != null
+                        ? src.EmployeeRoles.FirstOrDefault().Roles.RoleName
+                        : null))
+                .ForMember(dest => dest.RoleId,
+                    opt => opt.MapFrom(src => src.EmployeeRoles.FirstOrDefault() != null
+                        ? src.EmployeeRoles.FirstOrDefault().RoleId
+                        : 0));
 
             CreateMap<RecruitmentPosition, RecruitmentPositionDto>()
                 .ForMember(dest => dest.DepartmentName, opt => opt.MapFrom(src => src.Departments.DepartmentName));
