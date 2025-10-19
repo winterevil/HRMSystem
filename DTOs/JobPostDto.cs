@@ -9,8 +9,8 @@ namespace HRMSystem.DTOs
         public string Content { get; set; }
         public DateTime CreatedAt { get; set; }
         public int RequirementId { get; set; }
-        public string Requirement { get; set; }
+        public string? Requirement { get; set; }
         public int PostedById { get; set; }
-        public string PostedBy { get; set; }
+        public string? PostedBy { get; set; }
     }
 }

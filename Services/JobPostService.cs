@@ -80,13 +80,10 @@ namespace HRMSystem.Services
         public async Task<IEnumerable<JobPostDto>> GetAllAsync()
         {
             var jobPosts = await _repo.GetAllAsync();
-            var job = jobPosts.OrderByDescending(j => j.CreatedAt)
-                           .Select(j => _mapper.Map<JobPostDto>(j));
-            if (job == null || !job.Any())
-            {
-                throw new InvalidOperationException("No job posts found.");
-            }
-            return job;
+            var job = jobPosts
+                .Select(j => _mapper.Map<JobPostDto>(j));
+
+            return job ?? Enumerable.Empty<JobPostDto>();
         }
 
         public async Task<JobPostDto?> GetByIdAsync(int id)
@@ -122,7 +119,9 @@ namespace HRMSystem.Services
             {
                 throw new InvalidOperationException("Poster not found.");
             }
+            var oldCreatedAt = existingPost.CreatedAt;
             _mapper.Map(dto, existingPost);
+            existingPost.CreatedAt = oldCreatedAt;
             existingPost.RecruitmentRequirements = requirement;
             existingPost.RequirementId = requirement.Id;
             existingPost.PostedBy = poster;

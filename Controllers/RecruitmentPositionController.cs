@@ -121,5 +121,23 @@ namespace HRMSystem.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
+
+        [HttpGet("by-department")]
+        public async Task<IActionResult> GetByDepartment()
+        {
+            try
+            {
+                var result = await _service.GetByManagerDepartmentAsync(User);
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
     }
 }

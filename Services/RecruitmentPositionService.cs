@@ -10,11 +10,13 @@ namespace HRMSystem.Services
     public class RecruitmentPositionService : IRecruitmentPositionService
     {
         private readonly IRecruimentPositionRepository _repo;
+        private readonly IEmployeeRepository _employeeRepo;
         private readonly IMapper _mapper;
-        public RecruitmentPositionService(IRecruimentPositionRepository repo, IMapper mapper)
+        public RecruitmentPositionService(IRecruimentPositionRepository repo, IMapper mapper, IEmployeeRepository employeeRepository)
         {
             _repo = repo;
             _mapper = mapper;
+            _employeeRepo = employeeRepository;
         }
         public async Task CreateAsync(RecruitmentPositionDto dto, ClaimsPrincipal user)
         {
@@ -112,5 +114,26 @@ namespace HRMSystem.Services
             _repo.Update(entity);
             await _repo.SaveChangesAsync();
         }
+
+        public async Task<IEnumerable<RecruitmentPositionDto>> GetByManagerDepartmentAsync(ClaimsPrincipal user)
+        {
+            var empId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier));
+
+            var employee = await _employeeRepo.GetByIdAsync(empId);
+            if (employee == null)
+                throw new InvalidOperationException("Employee not found.");
+            if (employee.DepartmentId == null)
+                throw new InvalidOperationException("Manager has no department.");
+            Console.WriteLine($"[DEBUG] EmployeeId = {empId}");
+            Console.WriteLine($"[DEBUG] Employee.DepartmentId = {employee.DepartmentId}");
+
+            var positions = await _repo.GetAllAsync(
+                p => p.DepartmentId == employee.DepartmentId
+            );
+
+            return _mapper.Map<IEnumerable<RecruitmentPositionDto>>(positions);
+        }
+
+
     }
 }
