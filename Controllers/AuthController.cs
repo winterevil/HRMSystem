@@ -49,7 +49,15 @@ namespace HRMSystem.Controllers
             {
                 return BadRequest("Invalid email or password");
             }
-
+            switch (employee.Status)
+            {
+                case EmployeeStatus.Resigned:
+                    return BadRequest("Your account has been resigned.");
+                case EmployeeStatus.Retired:
+                    return BadRequest("Your account is retired.");
+                case EmployeeStatus.OnLeave:
+                    return BadRequest("Your account is temporarily inactive (On Leave).");
+            }
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, employee.Id.ToString()),
@@ -76,6 +84,11 @@ namespace HRMSystem.Controllers
             {
                 token = new JwtSecurityTokenHandler().WriteToken(token)
             });
+        }
+        [HttpPost("logout")]
+        public IActionResult Logout()
+        {
+            return Ok("Logged out successfully");
         }
     }
 }

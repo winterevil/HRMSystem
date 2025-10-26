@@ -112,13 +112,17 @@ using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+    context.Database.EnsureCreated();
+    var deletedContext = scope.ServiceProvider.GetRequiredService<DeletedDbContext>();
+    deletedContext.Database.EnsureCreated();
 
     var service = scope.ServiceProvider.GetRequiredService<IAttendanceService>();
     await service.AutoCheckoutPendingAsync();
 
     await DbSeeder.SeedRolesAsync(context);
-    await DbSeeder.SeedAdminAsync(context, config);
     await DbSeeder.SeedDepartmentAsync(context);
+    await DbSeeder.SeedEmployeeTypeSystemAsync(context);
+    await DbSeeder.SeedAdminAsync(context, config);
 }
 app.UseCors("AllowFrontend");
 

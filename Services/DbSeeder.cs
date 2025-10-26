@@ -26,6 +26,27 @@ namespace HRMSystem.Services
 
             await context.SaveChangesAsync();
         }
+        public static async Task SeedEmployeeTypeSystemAsync(AppDbContext context)
+        {
+            var typeNames = new[] { "System", "Full-time" };
+
+            foreach (var typeName in typeNames)
+            {
+                if (!await context.EmployeeTypes.AnyAsync(t => t.TypeName == typeName))
+                {
+                    context.EmployeeTypes.Add(new EmployeeType
+                    {
+                        TypeName = typeName,
+                        CreatedAt = DateTime.UtcNow.AddHours(7),
+                        IsSystemOnly = true
+                    });
+                }
+            }
+
+            await context.SaveChangesAsync();
+        }
+
+
         public static async Task SeedAdminAsync(AppDbContext context, IConfiguration config)
         {
             var email = config["AdminAccount:Email"];
@@ -44,6 +65,8 @@ namespace HRMSystem.Services
 
             var department = await context.Departments
                 .FirstAsync(d => d.DepartmentName == "Administration");
+            var type = await context.EmployeeTypes
+                .FirstAsync(d => d.TypeName == "System");
             var hasher = new PasswordHasher<Employee>();
             var admin = new Employee
             {
@@ -53,7 +76,7 @@ namespace HRMSystem.Services
                 Gender = "Other",
                 DOB = DateTime.UtcNow.AddYears(-20),
                 DepartmentId = department.Id,
-                EmployeeTypeId = 1,
+                EmployeeTypeId = type.Id,
                 Address = "Administration",
                 Phone = "0123456789",
                 CreatedAt = DateTime.UtcNow.AddHours(7),

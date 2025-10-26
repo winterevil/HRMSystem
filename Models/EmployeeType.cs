@@ -11,5 +11,7 @@ namespace HRMSystem.Models
         public DateTime CreatedAt { get; set; }
 
         public virtual ICollection<Employee> Employees { get; set; }
+        public bool IsSystemOnly { get; set; } = false;
+
     }
 }

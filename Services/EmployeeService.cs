@@ -89,7 +89,6 @@ namespace HRMSystem.Services
             if (employee == null)
             {
                 throw new InvalidOperationException("Employee not found.");
-                return null;
             }
 
             return _mapper.Map<EmployeeDto>(employee);
@@ -104,7 +103,10 @@ namespace HRMSystem.Services
             {
                 throw new UnauthorizedAccessException("Admin account must be created by the system.");
             }
-
+            if (dto.EmployeeTypeId == 1)
+            {
+                throw new UnauthorizedAccessException("System employee type cannot be assigned manually.");
+            }
             if (currentRole.Contains("Admin"))
             {
                 if (dto.Role != "HR")
@@ -273,7 +275,10 @@ namespace HRMSystem.Services
                 throw new InvalidOperationException("Employee not found.");
             }
 
-
+            if (employee.EmployeeRoles != null && employee.EmployeeRoles.Any(er => er.Roles.RoleName == "Admin"))
+            {
+                throw new UnauthorizedAccessException("You are not allowed to delete the Admin account.");
+            }
             var deleted = new DeletedEmployee
             {
                 Id = employee.Id,

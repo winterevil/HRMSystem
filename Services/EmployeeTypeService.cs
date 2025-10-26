@@ -1,4 +1,5 @@
-﻿using System.Security.Claims;
+﻿using System.Data;
+using System.Security.Claims;
 using AutoMapper;
 
 
@@ -49,6 +50,7 @@ namespace HRMSystem.Services
             {
                 throw new InvalidOperationException("Employee type not found.");
             }
+
             return _mapper.Map<EmployeeTypeDto>(entity);
         }
         public async Task CreateAsync(EmployeeTypeDto dto, ClaimsPrincipal user)
@@ -58,6 +60,9 @@ namespace HRMSystem.Services
             {
                 throw new UnauthorizedAccessException("You do not have permission to create employee types.");
             }
+            if (dto.TypeName.Trim().Equals("System", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("You cannot create or modify the System employee type.");
+
             var types = await _repo.GetAllAsync();
             var entity = _mapper.Map<EmployeeType>(dto);
             if (entity == null)
@@ -80,12 +85,14 @@ namespace HRMSystem.Services
             {
                 throw new UnauthorizedAccessException("You do not have permission to update employee types.");
             }
+
             var entity = _mapper.Map<EmployeeType>(dto);
             if (entity == null)
             {
                 throw new InvalidOperationException("Employee type not found.");
             }
-
+            if (entity.TypeName == "System")
+                throw new InvalidOperationException("The System employee type cannot be edited or renamed.");
             _repo.Update(entity);
             await _repo.SaveChangesAsync();
         }
@@ -101,7 +108,8 @@ namespace HRMSystem.Services
             {
                 throw new InvalidOperationException("Employee type not found.");
             }
-
+            if (entity.TypeName == "System")
+                throw new InvalidOperationException("The System employee type cannot be deleted.");
             var deleted = new DeletedEmployeeType
             {
                 Id = entity.Id,

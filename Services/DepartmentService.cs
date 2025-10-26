@@ -85,7 +85,10 @@ namespace HRMSystem.Services
             {
                 throw new InvalidOperationException("Department not found.");
             }
-
+            if (entity.Id == 1)
+            {
+                throw new InvalidOperationException("Cannot update the Administration department.");
+            }
             _repo.Update(entity);
             await _repo.SaveChangesAsync();
         }
@@ -101,7 +104,10 @@ namespace HRMSystem.Services
             {
                 throw new InvalidOperationException("Department not found.");
             }
-
+            if (entity.Id == 1)
+            {
+                throw new InvalidOperationException("Cannot delete the Administration department.");
+            }
             var deleted = new DeletedDepartment
             {
                 Id = entity.Id,
