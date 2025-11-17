@@ -43,6 +43,9 @@ namespace HRMSystem.Services
             jobPost.RecruitmentRequirements = requirement;
             jobPost.RequirementId = requirement.Id;
             jobPost.PostedById = poster.Id;
+            jobPost.Status = requirement.Status == RecruitmentStatus.Approved
+                ? JobPostStatus.Hiring
+                : JobPostStatus.Closed;
 
             await _repo.AddAsync(jobPost);
             await _repo.SaveChangesAsync();

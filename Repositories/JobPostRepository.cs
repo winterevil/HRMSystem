@@ -23,5 +23,11 @@ namespace HRMSystem.Repositories
                 .Include(jp => jp.PostedBy)
                 .FirstOrDefaultAsync(jp => jp.Id == id);
         }
+        public async Task<IEnumerable<JobPost>> GetByRequirementIdAsync(int requirementId)
+        {
+            return await _context.JobPosts
+                .Where(jp => jp.RequirementId == requirementId)
+                .ToListAsync();
+        }
     }
 }

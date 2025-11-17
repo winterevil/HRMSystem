@@ -12,5 +12,6 @@ namespace HRMSystem.DTOs
         public string? Requirement { get; set; }
         public int PostedById { get; set; }
         public string? PostedBy { get; set; }
+        public int Status { get; set; }
     }
 }

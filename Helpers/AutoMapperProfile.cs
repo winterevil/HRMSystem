@@ -70,12 +70,16 @@ namespace HRMSystem.Helpers
                 .ForMember(dest => dest.EmployeeName, opt => opt.MapFrom(src => src.Employees.FullName));
 
             CreateMap<JobPost, JobPostDto>()
-                .ForMember(dest => dest.PostedBy, opt => opt.MapFrom(src => src.PostedBy.FullName))
-                .ForMember(dest => dest.RequirementId, opt => opt.MapFrom(src => src.RequirementId))
-                .ForMember(dest => dest.Requirement, opt => opt.MapFrom(src => src.RecruitmentRequirements.Requirement))
+                .ForMember(dest => dest.PostedBy,
+                           opt => opt.MapFrom(src => src.PostedBy.FullName))
+                .ForMember(dest => dest.Requirement,
+                           opt => opt.MapFrom(src => src.RecruitmentRequirements.Requirement))
+                .ForMember(dest => dest.Status,
+                           opt => opt.MapFrom(src => (int)src.Status))
                 .ReverseMap()
                 .ForMember(dest => dest.PostedBy, opt => opt.Ignore())
-                .ForMember(dest => dest.RecruitmentRequirements, opt => opt.Ignore());
+                .ForMember(dest => dest.RecruitmentRequirements, opt => opt.Ignore())
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (JobPostStatus)src.Status));
 
         }
     }

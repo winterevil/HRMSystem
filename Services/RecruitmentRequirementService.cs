@@ -12,14 +12,35 @@ namespace HRMSystem.Services
         private readonly IMapper _mapper;
         private readonly IRecruimentPositionRepository _positionRepo;
         private readonly IEmployeeRepository _employeeRepo;
-        public RecruitmentRequirementService(IRecruitmentRequirementRepository repo, IMapper mapper, IRecruimentPositionRepository positionRepo, IEmployeeRepository employeeRepo)
+        private readonly IJobPostRepository _jobPostRepo;
+        public RecruitmentRequirementService(IRecruitmentRequirementRepository repo, IMapper mapper, IRecruimentPositionRepository positionRepo, IEmployeeRepository employeeRepo, IJobPostRepository jobPostRepo)
         {
             _repo = repo;
             _mapper = mapper;
             _positionRepo = positionRepo;
             _employeeRepo = employeeRepo;
+            _jobPostRepo = jobPostRepo;
         }
+        public async Task UpdateJobPostsStatusAsync(RecruitmentRequirement recruitment)
+        {
+            var jobPosts = await _jobPostRepo.GetByRequirementIdAsync(recruitment.Id);
+            if (jobPosts == null || !jobPosts.Any()) return;
 
+            JobPostStatus newStatus = recruitment.Status switch
+            {
+                RecruitmentStatus.Approved => JobPostStatus.Hiring,
+                RecruitmentStatus.Completed => JobPostStatus.Closed,
+                _ => JobPostStatus.Hiring
+            };
+
+            foreach (var jobPost in jobPosts)
+            {
+                jobPost.Status = newStatus;
+                _jobPostRepo.Update(jobPost);
+            }
+
+            await _jobPostRepo.SaveChangesAsync();
+        }
         public async Task ApproveAsync(int id, RecruitmentStatus status, ClaimsPrincipal user)
         {
             var currentRole = user.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
@@ -33,14 +54,22 @@ namespace HRMSystem.Services
             {
                 throw new InvalidOperationException("Recruitment requirement not found.");
             }
-
-            if (entity.Status != RecruitmentStatus.Pending)
+            var validTransitions = new Dictionary<RecruitmentStatus, RecruitmentStatus[]>
             {
-                throw new InvalidOperationException("Recruitment requirement is not in a state that can be updated.");
+                { RecruitmentStatus.Pending, new[] { RecruitmentStatus.Approved, RecruitmentStatus.Rejected } },
+                { RecruitmentStatus.Approved, new[] { RecruitmentStatus.Completed } }
+            };
+
+            if (!validTransitions.TryGetValue(entity.Status, out var allowedNext) || !allowedNext.Contains(status))
+            {
+                throw new InvalidOperationException(
+                    $"Recruitment requirement cannot be changed from {entity.Status} to {status}."
+                );
             }
             entity.Status = status;
             _repo.Update(entity);
             await _repo.SaveChangesAsync();
+            await UpdateJobPostsStatusAsync(entity);
         }
 
         public async Task CreateAsync(RecruitmentRequirementDto dto, ClaimsPrincipal user)
@@ -223,6 +252,7 @@ namespace HRMSystem.Services
                 entity.Status = RecruitmentStatus.Completed;
                 _repo.Update(entity);
                 await _repo.SaveChangesAsync();
+                await UpdateJobPostsStatusAsync(entity);
                 return;
             }
 

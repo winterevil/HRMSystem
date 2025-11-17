@@ -6,5 +6,6 @@ namespace HRMSystem.Repositories
     {
         Task<IEnumerable<JobPost>> GetAllAsync();
         Task<JobPost?> GetByIdAsync(int id);
+        Task<IEnumerable<JobPost>> GetByRequirementIdAsync(int requirementId);
     }
 }

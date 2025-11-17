@@ -15,5 +15,6 @@ namespace HRMSystem.Models
         public int PostedById { get; set; }
         public int DeletedById { get; set; }
         public DateTime DeletedAt { get; set; }
+        public int Status { get; set; }
     }
 }

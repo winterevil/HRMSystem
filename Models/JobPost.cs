@@ -3,6 +3,12 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace HRMSystem.Models
 {
+    public enum JobPostStatus
+    {
+        Hiring = 0,
+        Closed = 1
+    }
+
     public class JobPost
     {
         [Key]
@@ -17,5 +23,6 @@ namespace HRMSystem.Models
         [ForeignKey("Employees")]
         public int PostedById { get; set; }
         public Employee PostedBy { get; set; }
+        public JobPostStatus Status { get; set; }
     }
 }
