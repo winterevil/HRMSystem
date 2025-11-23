@@ -19,8 +19,8 @@ namespace HRMSystem.Helpers
                     opt => opt.MapFrom(src => src.Status));
 
             CreateMap<EmployeeUpdateDto, Employee>()
-                .ForMember(dest => dest.Status,
-                    opt => opt.MapFrom(src => src.Status));
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
+                .ForMember(dest => dest.HashPassword, opt => opt.Ignore());
 
             CreateMap<Employee, EmployeeDto>()
                 .ForMember(dest => dest.Status,

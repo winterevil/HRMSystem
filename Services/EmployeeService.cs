@@ -180,16 +180,41 @@ namespace HRMSystem.Services
         {
             var employee = await _repo.GetByIdAsync(dto.Id);
             if (employee == null) return;
+
             var adminDept = await _context.Departments
                 .FirstAsync(d => d.DepartmentName == "Administration");
 
             var currentRoles = user.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
+            var currentUserId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
             var role = await _context.EmployeeRoles.Include(r => r.Roles)
                 .FirstOrDefaultAsync(r => r.EmployeeId == employee.Id);
             var targetRole = role?.Roles?.RoleName ?? "";
 
             if (targetRole == "Admin")
                 throw new UnauthorizedAccessException("You are not allowed to update the Admin account.");
+
+            var isSelfUpdate = currentUserId == dto.Id;
+
+            if (isSelfUpdate)
+            {
+                employee.FullName = dto.FullName;
+                employee.Phone = dto.Phone;
+                employee.Address = dto.Address;
+                employee.DOB = dto.DOB;
+                employee.Gender = dto.Gender;
+
+                if (!string.IsNullOrEmpty(dto.Password))
+                {
+                    employee.HashPassword = new PasswordHasher<Employee>()
+                        .HashPassword(employee, dto.Password);
+                }
+
+                _repo.Update(employee);
+                await _repo.SaveChangesAsync();
+                return;
+            }
+
 
             if (currentRoles.Contains("Admin"))
             {
@@ -221,25 +246,22 @@ namespace HRMSystem.Services
             }
             else if (currentRoles.Contains("Manager") && targetRole == "Employee")
             {
-                var currentUserId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier));
                 var manager = await _context.Employees.FindAsync(currentUserId);
+
                 if (manager == null || manager.DepartmentId != employee.DepartmentId)
                     throw new UnauthorizedAccessException("Managers can only update employees in their own department.");
+
                 if (dto.DepartmentId == null || dto.EmployeeTypeId == null)
                 {
                     throw new InvalidOperationException("DepartmentId and EmployeeTypeId must be provided.");
                 }
             }
-            else throw new UnauthorizedAccessException("You are not allowed to update this employee.");
-            if (!string.IsNullOrEmpty(dto.Password))
+            else
             {
-                var currentUserId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
-                if (currentUserId != dto.Id)
-                {
-                    throw new UnauthorizedAccessException("You can only change your own password.");
-                }
-                employee.HashPassword = new PasswordHasher<Employee>().HashPassword(employee, dto.Password);
+                throw new UnauthorizedAccessException("You are not allowed to update this employee.");
             }
+
+
             _mapper.Map(dto, employee);
             _repo.Update(employee);
             await _repo.SaveChangesAsync();
@@ -252,7 +274,6 @@ namespace HRMSystem.Services
                     role.RoleId = newRole.Id;
                     await _context.SaveChangesAsync();
                 }
-
             }
         }
 

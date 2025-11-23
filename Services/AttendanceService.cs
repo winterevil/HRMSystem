@@ -11,11 +11,13 @@ namespace HRMSystem.Services
         private readonly IAttendanceRepository _repo;
         private readonly IMapper _mapper;
         private readonly IEmployeeRepository _employeeRepo;
-        public AttendanceService(IAttendanceRepository repo, IMapper mapper, IEmployeeRepository employeeRepo)
+        private readonly IOvertimeRequestRepository _otRepo;
+        public AttendanceService(IAttendanceRepository repo, IMapper mapper, IEmployeeRepository employeeRepo, IOvertimeRequestRepository otRepo)
         {
             _repo = repo;
             _mapper = mapper;
             _employeeRepo = employeeRepo;
+            _otRepo = otRepo;
         }
 
         public async Task AutoCheckoutPendingAsync()
@@ -27,7 +29,21 @@ namespace HRMSystem.Services
 
             foreach (var a in pendingAttendances)
             {
-                a.CheckoutTime = a.CheckinDate.AddDays(1).AddSeconds(-1);
+                DateTime checkout = a.CheckinDate.AddHours(17);
+
+                var approvedOT  = await _otRepo.GetApprovedByDateAsync(a.EmployeeId, a.CheckinDate);
+
+                if (approvedOT != null && approvedOT.Any())
+                {
+                    var lastOT = approvedOT.OrderBy(o => o.EndTime).Last();
+
+                    if (lastOT.EndTime > checkout)
+                    {
+                        checkout = lastOT.EndTime;
+                    }
+                }
+
+                a.CheckoutTime = checkout;
                 _repo.Update(a);
             }
 
