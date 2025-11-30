@@ -204,10 +204,20 @@ namespace HRMSystem.Services
                 employee.DOB = dto.DOB;
                 employee.Gender = dto.Gender;
 
-                if (!string.IsNullOrEmpty(dto.Password))
+                if (!string.IsNullOrEmpty(dto.NewPassword))
                 {
+                    if (string.IsNullOrEmpty(dto.OldPassword))
+                        throw new InvalidOperationException("Old password is required.");
+
+                    var result = new PasswordHasher<Employee>()
+                        .VerifyHashedPassword(employee, employee.HashPassword, dto.OldPassword);
+
+                    if (result == PasswordVerificationResult.Failed)
+                        throw new InvalidOperationException("Old password is incorrect.");
+
+                    // Update to new password
                     employee.HashPassword = new PasswordHasher<Employee>()
-                        .HashPassword(employee, dto.Password);
+                        .HashPassword(employee, dto.NewPassword);
                 }
 
                 _repo.Update(employee);
