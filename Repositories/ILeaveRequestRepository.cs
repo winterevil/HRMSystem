@@ -6,5 +6,7 @@ namespace HRMSystem.Repositories
     {
         Task<IEnumerable<LeaveRequest>> GetAllAsync();
         Task<LeaveRequest?> GetByIdAsync(int id);
+        Task<IEnumerable<LeaveRequest>> GetByEmployeeAndDateAsync(int employeeId, DateTime date);
+
     }
 }

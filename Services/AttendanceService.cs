@@ -12,12 +12,14 @@ namespace HRMSystem.Services
         private readonly IMapper _mapper;
         private readonly IEmployeeRepository _employeeRepo;
         private readonly IOvertimeRequestRepository _otRepo;
-        public AttendanceService(IAttendanceRepository repo, IMapper mapper, IEmployeeRepository employeeRepo, IOvertimeRequestRepository otRepo)
+        private readonly ILeaveRequestRepository _leaveRepo;
+        public AttendanceService(IAttendanceRepository repo, IMapper mapper, IEmployeeRepository employeeRepo, IOvertimeRequestRepository otRepo, ILeaveRequestRepository leaveRepo)
         {
             _repo = repo;
             _mapper = mapper;
             _employeeRepo = employeeRepo;
             _otRepo = otRepo;
+            _leaveRepo = leaveRepo;
         }
 
         public async Task AutoCheckoutPendingAsync()
@@ -31,7 +33,7 @@ namespace HRMSystem.Services
             {
                 DateTime checkout = a.CheckinDate.AddHours(17);
 
-                var approvedOT  = await _otRepo.GetApprovedByDateAsync(a.EmployeeId, a.CheckinDate);
+                var approvedOT = await _otRepo.GetApprovedByDateAsync(a.EmployeeId, a.CheckinDate);
 
                 if (approvedOT != null && approvedOT.Any())
                 {
@@ -69,6 +71,12 @@ namespace HRMSystem.Services
             if (existingAttendance != null)
             {
                 throw new InvalidOperationException("You have already checked in today.");
+            }
+            var leavesToday = await _leaveRepo.GetByEmployeeAndDateAsync(employeeId, today);
+
+            if (leavesToday != null && leavesToday.Any(l => l.Status == LeaveStatus.Approved)) 
+            {
+                throw new InvalidOperationException("You cannot check in today because you are on approved leave.");
             }
             var attendance = new Attendance
             {

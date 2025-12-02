@@ -24,5 +24,16 @@ namespace HRMSystem.Repositories
                 .Include(r => r.ApprovedBy)
                 .FirstOrDefaultAsync(r => r.Id == id);
         }
+        public async Task<IEnumerable<LeaveRequest>> GetByEmployeeAndDateAsync(int employeeId, DateTime date)
+        {
+            return await _context.LeaveRequests
+                .Where(l =>
+                    l.EmployeeId == employeeId &&
+                    date >= l.StartTime.Date &&
+                    date <= l.EndTime.Date
+                )
+                .ToListAsync();
+        }
+
     }
 }
