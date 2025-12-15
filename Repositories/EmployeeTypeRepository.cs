@@ -1,5 +1,6 @@
 ﻿using HRMSystem.Data;
 using HRMSystem.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace HRMSystem.Repositories
 {
@@ -7,6 +8,11 @@ namespace HRMSystem.Repositories
     {
         public EmployeeTypeRepository(AppDbContext context, DeletedDbContext deletedContext) : base(context, deletedContext)
         {
+        }
+        public async Task<int> CountEmployeesByTypeAsync(int employeeTypeId)
+        {
+            return await _context.Employees
+                .CountAsync(e => e.EmployeeTypeId == employeeTypeId);
         }
     }
 }

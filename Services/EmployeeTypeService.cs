@@ -96,20 +96,24 @@ namespace HRMSystem.Services
             _repo.Update(entity);
             await _repo.SaveChangesAsync();
         }
+
         public async Task DeleteAsync(int id, ClaimsPrincipal user)
         {
             var currentRole = user.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
             if (!currentRole.Contains("HR"))
-            {
                 throw new UnauthorizedAccessException("You do not have permission to delete employee types.");
-            }
+
             var entity = await _repo.GetByIdAsync(id);
             if (entity == null)
-            {
                 throw new InvalidOperationException("Employee type not found.");
-            }
-            if (entity.TypeName == "System")
+
+            if (entity.TypeName.Equals("System", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("The System employee type cannot be deleted.");
+
+            var count = await _repo.CountEmployeesByTypeAsync(id);
+            if (count > 0)
+                throw new InvalidOperationException("Cannot delete an employee type that is currently assigned to employees.");
+
             var deleted = new DeletedEmployeeType
             {
                 Id = entity.Id,
@@ -122,6 +126,5 @@ namespace HRMSystem.Services
             await _repo.DeleteWithArchiveAsync(entity, deleted);
             await _repo.SaveChangesAsync();
         }
-
     }
 }

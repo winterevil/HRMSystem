@@ -92,6 +92,7 @@ namespace HRMSystem.Services
             _repo.Update(entity);
             await _repo.SaveChangesAsync();
         }
+
         public async Task DeleteAsync(int id, ClaimsPrincipal user)
         {
             var currentRole = user.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
@@ -99,15 +100,24 @@ namespace HRMSystem.Services
             {
                 throw new UnauthorizedAccessException("You do not have permission to delete departments.");
             }
+
             var entity = await _repo.GetByIdAsync(id);
             if (entity == null)
             {
                 throw new InvalidOperationException("Department not found.");
             }
+
             if (entity.Id == 1)
             {
                 throw new InvalidOperationException("Cannot delete the Administration department.");
             }
+
+            int employeeCount = await _repo.CountEmployeesAsync(id);
+            if (employeeCount > 0)
+            {
+                throw new InvalidOperationException("Cannot delete a department that still has employees.");
+            }
+
             var deleted = new DeletedDepartment
             {
                 Id = entity.Id,
