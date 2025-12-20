@@ -24,10 +24,10 @@ namespace HRMSystem.Repositories
                 .FirstOrDefaultAsync(a => a.EmployeeId == employeeId && a.CheckinDate == date);
         }
 
-        public async Task<IEnumerable<Attendance>> GetPendingCheckoutsBeforeAsync(DateTime date)
+        public async Task<IEnumerable<Attendance>> GetPendingCheckoutsByDateAsync(DateTime date)
         {
             return await _context.Attendance
-                .Where(a => a.CheckoutTime == null && a.CheckinDate < date)
+                .Where(a => a.CheckinDate == date && a.CheckoutTime == null)
                 .ToListAsync();
         }
 

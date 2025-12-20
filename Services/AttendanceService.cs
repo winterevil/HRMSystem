@@ -24,29 +24,46 @@ namespace HRMSystem.Services
 
         public async Task AutoCheckoutPendingAsync()
         {
-            var pendingAttendances = await _repo.GetPendingCheckoutsBeforeAsync(DateTime.Today);
+            var now = DateTime.UtcNow.AddHours(7);
+            var today = DateTime.Today;
+
+            var pendingAttendances = await _repo.GetPendingCheckoutsByDateAsync(today);
 
             if (pendingAttendances == null || !pendingAttendances.Any())
                 return;
 
             foreach (var a in pendingAttendances)
             {
-                DateTime checkout = a.CheckinDate.AddHours(17);
+                DateTime? autoCheckoutTime = null;
 
-                var approvedOT = await _otRepo.GetApprovedByDateAsync(a.EmployeeId, a.CheckinDate);
+                var approvedOTs = await _otRepo.GetApprovedByDateAsync(a.EmployeeId, a.CheckinDate);
 
-                if (approvedOT != null && approvedOT.Any())
+                if (approvedOTs != null && approvedOTs.Any())
                 {
-                    var lastOT = approvedOT.OrderBy(o => o.EndTime).Last();
+                    // OT
+                    var lastOT = approvedOTs.OrderBy(o => o.EndTime).Last();
 
-                    if (lastOT.EndTime > checkout)
+                    if (now >= lastOT.EndTime)
                     {
-                        checkout = lastOT.EndTime;
+                        autoCheckoutTime = lastOT.EndTime;
+                    }
+                }
+                else
+                {
+                    // No OT
+                    var standardCheckout = a.CheckinDate.AddHours(17);
+
+                    if (now >= standardCheckout)
+                    {
+                        autoCheckoutTime = standardCheckout;
                     }
                 }
 
-                a.CheckoutTime = checkout;
-                _repo.Update(a);
+                if (autoCheckoutTime.HasValue)
+                {
+                    a.CheckoutTime = autoCheckoutTime.Value;
+                    _repo.Update(a);
+                }
             }
 
             await _repo.SaveChangesAsync();

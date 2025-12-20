@@ -6,6 +6,6 @@ namespace HRMSystem.Repositories
     {
         Task<Attendance?> GetByDateAsync(int employeeId, DateTime date);
         Task<IEnumerable<Attendance>> GetAllWithEmployeesAsync();
-        Task<IEnumerable<Attendance>> GetPendingCheckoutsBeforeAsync(DateTime today);
+        Task<IEnumerable<Attendance>> GetPendingCheckoutsByDateAsync(DateTime today);
     }
 }

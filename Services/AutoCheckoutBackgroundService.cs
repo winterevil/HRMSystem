@@ -13,22 +13,14 @@
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                var now = DateTime.Now;
-                var target = new DateTime(now.Year, now.Month, now.Day, 23, 59, 0);
-
-                var delay = target - now;
-                if (delay.TotalMilliseconds < 0)
-                    delay = TimeSpan.FromHours(24);
-
-                await Task.Delay(delay, stoppingToken);
-
                 using (var scope = _serviceProvider.CreateScope())
                 {
                     var service = scope.ServiceProvider.GetRequiredService<IAttendanceService>();
                     await service.AutoCheckoutPendingAsync();
                 }
 
-                await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+                // Auto checkout every 5 minutes
+                await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
             }
         }
     }
