@@ -10,12 +10,14 @@ namespace HRMSystem.Services
     {
         private readonly IOvertimeRequestRepository _repo;
         private readonly IEmployeeRepository _employeeRepo;
+        private readonly ILeaveRequestRepository _leaveRequestRepo;
         private readonly IMapper _mapper;
-        public OvertimeRequestService(IOvertimeRequestRepository repo, IMapper mapper, IEmployeeRepository employeeRepo)
+        public OvertimeRequestService(IOvertimeRequestRepository repo, IMapper mapper, IEmployeeRepository employeeRepo, ILeaveRequestRepository leaveRequestRepo)
         {
             _repo = repo;
             _mapper = mapper;
             _employeeRepo = employeeRepo;
+            _leaveRequestRepo = leaveRequestRepo;
         }
 
         public async Task ApproveAsync(int id, OvertimeStatus status, ClaimsPrincipal user)
@@ -116,6 +118,19 @@ namespace HRMSystem.Services
                 throw new InvalidOperationException("Overtime request times must be in the future.");
             }
             int employeeId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
+            var approvedLeaves = await _leaveRequestRepo.GetApprovedLeavesByEmployeeIdAsync(employeeId);
+
+            bool hasOverlapLeave = approvedLeaves.Any(l =>
+                l.StartTime.Date <= dto.EndTime.Date &&
+                l.EndTime.Date >= dto.StartTime.Date
+            );
+
+            if (hasOverlapLeave)
+            {
+                throw new InvalidOperationException(
+                    "You cannot create an overtime request during an approved leave period."
+                );
+            }
             var employee = await _employeeRepo.GetByIdAsync(employeeId);
             entity.Employees = employee;
             entity.Status = OvertimeStatus.Pending;

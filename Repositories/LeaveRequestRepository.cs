@@ -35,5 +35,14 @@ namespace HRMSystem.Repositories
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<LeaveRequest>> GetApprovedLeavesByEmployeeIdAsync(int employeeId)
+        {
+            return await _context.LeaveRequests
+                .Where(l =>
+                    l.EmployeeId == employeeId &&
+                    l.Status == LeaveStatus.Approved)
+                .ToListAsync();
+        }
+
     }
 }

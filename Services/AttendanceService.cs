@@ -25,12 +25,10 @@ namespace HRMSystem.Services
         public async Task AutoCheckoutPendingAsync()
         {
             var now = DateTime.UtcNow.AddHours(7);
-            var today = DateTime.Today;
+            var today = now.Date;
 
             var pendingAttendances = await _repo.GetPendingCheckoutsByDateAsync(today);
-
-            if (pendingAttendances == null || !pendingAttendances.Any())
-                return;
+            if (!pendingAttendances.Any()) return;
 
             foreach (var a in pendingAttendances)
             {
@@ -38,25 +36,17 @@ namespace HRMSystem.Services
 
                 var approvedOTs = await _otRepo.GetApprovedByDateAsync(a.EmployeeId, a.CheckinDate);
 
-                if (approvedOTs != null && approvedOTs.Any())
+                if (approvedOTs.Any())
                 {
-                    // OT
                     var lastOT = approvedOTs.OrderBy(o => o.EndTime).Last();
-
                     if (now >= lastOT.EndTime)
-                    {
                         autoCheckoutTime = lastOT.EndTime;
-                    }
                 }
                 else
                 {
-                    // No OT
                     var standardCheckout = a.CheckinDate.AddHours(17);
-
                     if (now >= standardCheckout)
-                    {
                         autoCheckoutTime = standardCheckout;
-                    }
                 }
 
                 if (autoCheckoutTime.HasValue)
@@ -83,7 +73,8 @@ namespace HRMSystem.Services
             {
                 throw new InvalidOperationException("Employee not found.");
             }
-            var today = DateTime.Today;
+            var now = DateTime.UtcNow.AddHours(7);
+            var today = now.Date;
             var existingAttendance = await _repo.GetByDateAsync(employeeId, today.Date);
             if (existingAttendance != null)
             {
@@ -99,7 +90,7 @@ namespace HRMSystem.Services
             {
                 EmployeeId = employeeId,
                 CheckinDate = today,
-                CheckinTime = DateTime.UtcNow.AddHours(7),
+                CheckinTime = now,
                 Employees = employee
             };
             await _repo.AddAsync(attendance);
@@ -119,8 +110,9 @@ namespace HRMSystem.Services
             {
                 throw new InvalidOperationException("Employee not found.");
             }
-            var today = DateTime.Today;
-            var existingAttendance = await _repo.GetByDateAsync(employeeId, today.Date);
+            var now = DateTime.UtcNow.AddHours(7);
+            var today = now.Date;
+            var existingAttendance = await _repo.GetByDateAsync(employeeId, today);
             if (existingAttendance == null || existingAttendance.CheckoutTime != null)
             {
                 throw new InvalidOperationException("No check-in found or already checked out.");

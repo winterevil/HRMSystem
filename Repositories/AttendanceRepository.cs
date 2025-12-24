@@ -27,7 +27,8 @@ namespace HRMSystem.Repositories
         public async Task<IEnumerable<Attendance>> GetPendingCheckoutsByDateAsync(DateTime date)
         {
             return await _context.Attendance
-                .Where(a => a.CheckinDate == date && a.CheckoutTime == null)
+                .Where(a => a.CheckoutTime == null
+                         && a.CheckinDate <= date)
                 .ToListAsync();
         }
 
