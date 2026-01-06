@@ -27,6 +27,8 @@ namespace HRMSystem.Models
         public string Address { get; set; }
         public DateTime CreatedAt { get;set; }
         public EmployeeStatus Status { get; set; }
+        public string? ResetPasswordToken { get; set; }
+        public DateTime? ResetPasswordExpiry { get; set; }
 
         [ForeignKey("Departments")]
         public int? DepartmentId { get; set; }

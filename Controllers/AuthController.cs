@@ -9,6 +9,7 @@ using HRMSystem.Data;
 using HRMSystem.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
+using HRMSystem.Services;
 
 namespace HRMSystem.Controllers
 {
@@ -18,11 +19,12 @@ namespace HRMSystem.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IConfiguration _config;
-
-        public AuthController(AppDbContext context, IConfiguration config)
+        private readonly IEmailService _emailService;
+        public AuthController(AppDbContext context, IConfiguration config, IEmailService emailService)
         {
             _context = context;
             _config = config;
+            _emailService = emailService;
         }
 
         [HttpPost("login")]
@@ -90,5 +92,52 @@ namespace HRMSystem.Controllers
         {
             return Ok("Logged out successfully");
         }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordDto dto)
+        {
+            var employee = await _context.Employees
+                .FirstOrDefaultAsync(e => e.Email == dto.Email);
+
+            if (employee == null) return Ok();
+
+            var token = Guid.NewGuid().ToString();
+
+            employee.ResetPasswordToken = token;
+            employee.ResetPasswordExpiry = DateTime.UtcNow.AddMinutes(10);
+
+            await _context.SaveChangesAsync();
+
+            var resetLink = $"http://localhost:3000/auth/reset-password?token={token}";
+
+            await _emailService.SendAsync(
+                employee.Email,
+                "Reset your password",
+                $"Click here to reset your password:\n{resetLink}"
+            );
+
+            return Ok();
+        }
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordDto dto)
+        {
+            var employee = await _context.Employees.FirstOrDefaultAsync(e =>
+                e.ResetPasswordToken == dto.Token &&
+                e.ResetPasswordExpiry > DateTime.UtcNow);
+
+            if (employee == null)
+                return BadRequest("Invalid or expired token");
+
+            employee.HashPassword = new PasswordHasher<Employee>()
+                .HashPassword(employee, dto.NewPassword);
+
+            employee.ResetPasswordToken = null;
+            employee.ResetPasswordExpiry = null;
+
+            await _context.SaveChangesAsync();
+
+            return Ok("Password reset successful");
+        }
+
     }
 }

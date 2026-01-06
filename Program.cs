@@ -71,6 +71,7 @@ builder.Services.AddScoped<IJobPostRepository, JobPostRepository>();
 builder.Services.AddScoped<IJobPostService, JobPostService>();
 builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 //builder.Services.AddHostedService<AutoCheckoutBackgroundService>();
 
 // AutoMapper

@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HRMSystem.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250527144032_AddNullable")]
-    partial class AddNullable
+    [Migration("20260105083753_AddResetPasswordFields")]
+    partial class AddResetPasswordFields
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -90,14 +90,14 @@ namespace HRMSystem.Migrations
                     b.Property<DateTime>("DOB")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("DepartmentId")
+                    b.Property<int?>("DepartmentId")
                         .HasColumnType("int");
 
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("EmployeeTypeId")
+                    b.Property<int?>("EmployeeTypeId")
                         .HasColumnType("int");
 
                     b.Property<string>("FullName")
@@ -114,6 +114,12 @@ namespace HRMSystem.Migrations
 
                     b.Property<string>("Phone")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ResetPasswordExpiry")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ResetPasswordToken")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Status")
@@ -162,6 +168,9 @@ namespace HRMSystem.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<bool>("IsSystemOnly")
+                        .HasColumnType("bit");
+
                     b.Property<string>("TypeName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -190,6 +199,9 @@ namespace HRMSystem.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("RequirementId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
                         .HasColumnType("int");
 
                     b.Property<string>("Title")
@@ -374,15 +386,11 @@ namespace HRMSystem.Migrations
                 {
                     b.HasOne("HRMSystem.Models.Department", "Departments")
                         .WithMany("Employees")
-                        .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("DepartmentId");
 
                     b.HasOne("HRMSystem.Models.EmployeeType", "EmployeeTypes")
                         .WithMany("Employees")
-                        .HasForeignKey("EmployeeTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("EmployeeTypeId");
 
                     b.Navigation("Departments");
 
