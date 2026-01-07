@@ -12,12 +12,14 @@ namespace HRMSystem.Services
         private readonly IEmployeeRepository _employeeRepo;
         private readonly IMapper _mapper;
         private readonly IRecruitmentRequirementRepository _recruitmentRepo;
-        public JobPostService(IJobPostRepository repo, IMapper mapper, IEmployeeRepository employeeRepo, IRecruitmentRequirementRepository recruitmentRepo)
+        private readonly INotificationService _notificationService;
+        public JobPostService(IJobPostRepository repo, IMapper mapper, IEmployeeRepository employeeRepo, IRecruitmentRequirementRepository recruitmentRepo, INotificationService notificationService)
         {
             _repo = repo;
             _mapper = mapper;
             _employeeRepo = employeeRepo;
             _recruitmentRepo = recruitmentRepo;
+            _notificationService = notificationService;
         }
         public async Task CreateAsync(JobPostDto dto, ClaimsPrincipal user)
         {
@@ -49,7 +51,14 @@ namespace HRMSystem.Services
 
             await _repo.AddAsync(jobPost);
             await _repo.SaveChangesAsync();
-
+            await _notificationService.NotifyByRolesAsync(
+                NotificationType.JobPostCreated,
+                "New Job Post Created",
+                $"Job post '{jobPost.Title}' has been created.",
+                "HR",
+                "Manager",
+                "Employee"
+            );
         }
 
         public async Task DeleteAsync(int id, ClaimsPrincipal user)

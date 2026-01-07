@@ -13,10 +13,14 @@ namespace HRMSystem.Services
     {
         private readonly IEmployeeTypeRepository _repo;
         private readonly IMapper _mapper;
-        public EmployeeTypeService(IEmployeeTypeRepository repo, IMapper mapper)
+        private readonly IEmployeeRepository _employeeRepo;
+        private readonly INotificationService _notificationService;
+        public EmployeeTypeService(IEmployeeTypeRepository repo, IMapper mapper, IEmployeeRepository employeeRepository, INotificationService notificationService)
         {
             _repo = repo;
             _mapper = mapper;
+            _employeeRepo = employeeRepository;
+            _notificationService = notificationService;
         }
         public async Task<IEnumerable<EmployeeTypeDto>> GetAllAsync(ClaimsPrincipal user)
         {
@@ -77,6 +81,14 @@ namespace HRMSystem.Services
             entity.CreatedAt = DateTime.UtcNow.AddHours(7);
             await _repo.AddAsync(entity);
             await _repo.SaveChangesAsync();
+            await _notificationService.NotifyByRolesAsync(
+                NotificationType.EmployeeTypeCreated,
+                "New Employee Type Created",
+                $"Employee Type '{entity.TypeName}' has been created.",
+                "HR",
+                "Manager",
+                "Employee"
+            );
         }
         public async Task UpdateAsync(EmployeeTypeDto dto, ClaimsPrincipal user)
         {

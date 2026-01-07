@@ -17,6 +17,8 @@ namespace HRMSystem.Data
         public DbSet<RecruitmentPosition> RecruitmentPositions { get; set; }
         public DbSet<RecruitmentRequirement> RecruitmentRequirements { get; set; }
         public DbSet<Role> Roles { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<NotificationRecipient> NotificationRecipients { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

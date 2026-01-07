@@ -24,7 +24,26 @@ namespace HRMSystem.Repositories
                     .ThenInclude(er => er.Roles)
                 .FirstOrDefaultAsync(e => e.Id == id);
         }
+        public async Task<List<Employee>> GetEmployeesByRoleAsync(string roleName)
+        {
+            return await _context.Employees
+                .Include(e => e.EmployeeRoles)
+                    .ThenInclude(er => er.Roles)
+                .Where(e =>
+                    e.EmployeeRoles.Any(er => er.Roles.RoleName == roleName))
+                .ToListAsync();
+        }
 
+        public async Task<List<Employee>> GetManagersByDepartmentAsync(int departmentId)
+        {
+            return await _context.Employees
+                .Include(e => e.EmployeeRoles)
+                    .ThenInclude(er => er.Roles)
+                .Where(e =>
+                    e.DepartmentId == departmentId &&
+                    e.EmployeeRoles.Any(er => er.Roles.RoleName == "Manager"))
+                .ToListAsync();
+        }
     }
 
 }

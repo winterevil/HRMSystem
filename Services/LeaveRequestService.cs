@@ -11,11 +11,13 @@ namespace HRMSystem.Services
         private readonly ILeaveRequestRepository _repo;
         private readonly IEmployeeRepository _employeeRepo;
         private readonly IMapper _mapper;
-        public LeaveRequestService(ILeaveRequestRepository repo, IMapper mapper, IEmployeeRepository employeeRepo)
+        private readonly INotificationService _notificationService;
+        public LeaveRequestService(ILeaveRequestRepository repo, IMapper mapper, IEmployeeRepository employeeRepo, INotificationService notificationService)
         {
             _repo = repo;
             _mapper = mapper;
             _employeeRepo = employeeRepo;
+            _notificationService = notificationService;
         }
 
         public async Task ApproveAsync(int id, LeaveStatus status, ClaimsPrincipal user)
@@ -91,6 +93,18 @@ namespace HRMSystem.Services
 
             _repo.Update(entity);
             await _repo.SaveChangesAsync();
+
+            var notiType = status == LeaveStatus.Approved
+                ? NotificationType.LeaveApproved
+                : NotificationType.LeaveRejected;
+
+            await _notificationService.CreateAsync(
+                notiType,
+                $"Leave {status}",
+                $"Your leave from {entity.StartTime:dd/MM} to {entity.EndTime:dd/MM} has been {status.ToString().ToLower()}.",
+                new List<int> { entity.EmployeeId }
+            );
+
         }
 
         public async Task CreateAsync(LeaveRequestDto dto, ClaimsPrincipal user)

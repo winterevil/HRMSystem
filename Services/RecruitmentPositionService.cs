@@ -12,11 +12,13 @@ namespace HRMSystem.Services
         private readonly IRecruimentPositionRepository _repo;
         private readonly IEmployeeRepository _employeeRepo;
         private readonly IMapper _mapper;
-        public RecruitmentPositionService(IRecruimentPositionRepository repo, IMapper mapper, IEmployeeRepository employeeRepository)
+        private readonly INotificationService _notificationService;
+        public RecruitmentPositionService(IRecruimentPositionRepository repo, IMapper mapper, IEmployeeRepository employeeRepository, INotificationService notificationService)
         {
             _repo = repo;
             _mapper = mapper;
             _employeeRepo = employeeRepository;
+            _notificationService = notificationService;
         }
         public async Task CreateAsync(RecruitmentPositionDto dto, ClaimsPrincipal user)
         {
@@ -36,6 +38,20 @@ namespace HRMSystem.Services
             entity.CreatedAt = DateTime.UtcNow.AddHours(7);
             await _repo.AddAsync(entity);
             await _repo.SaveChangesAsync();
+            var recipients = new List<int>();
+
+            var hrUsers = await _employeeRepo.GetEmployeesByRoleAsync("HR");
+            recipients.AddRange(hrUsers.Select(h => h.Id));
+
+            var managers = await _employeeRepo.GetManagersByDepartmentAsync(entity.DepartmentId);
+            recipients.AddRange(managers.Select(m => m.Id));
+
+            await _notificationService.CreateAsync(
+                NotificationType.PositionCreated,
+                "New Position Created",
+                $"Position '{entity.PositionName}' has been created.",
+                recipients
+            );
         }
 
         public async Task DeleteAsync(int id, ClaimsPrincipal user)

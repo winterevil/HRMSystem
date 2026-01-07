@@ -13,13 +13,16 @@ namespace HRMSystem.Services
         private readonly IEmployeeRepository _employeeRepo;
         private readonly IOvertimeRequestRepository _otRepo;
         private readonly ILeaveRequestRepository _leaveRepo;
-        public AttendanceService(IAttendanceRepository repo, IMapper mapper, IEmployeeRepository employeeRepo, IOvertimeRequestRepository otRepo, ILeaveRequestRepository leaveRepo)
+        private readonly INotificationService _notificationService;
+
+        public AttendanceService(IAttendanceRepository repo, IMapper mapper, IEmployeeRepository employeeRepo, IOvertimeRequestRepository otRepo, ILeaveRequestRepository leaveRepo, INotificationService notificationService)
         {
             _repo = repo;
             _mapper = mapper;
             _employeeRepo = employeeRepo;
             _otRepo = otRepo;
             _leaveRepo = leaveRepo;
+            _notificationService = notificationService;
         }
 
         public async Task AutoCheckoutPendingAsync()
@@ -53,6 +56,13 @@ namespace HRMSystem.Services
                 {
                     a.CheckoutTime = autoCheckoutTime.Value;
                     _repo.Update(a);
+
+                    await _notificationService.CreateAsync(
+                        NotificationType.AutoCheckout,
+                        "Auto Checkout",
+                        $"You were automatically checked out at {a.CheckoutTime:HH:mm}.",
+                        new List<int> { a.EmployeeId } 
+                    );
                 }
             }
 

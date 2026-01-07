@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HRMSystem.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260105083753_AddResetPasswordFields")]
-    partial class AddResetPasswordFields
+    [Migration("20260107025341_AddNotificationTable")]
+    partial class AddNotificationTable
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -253,6 +253,62 @@ namespace HRMSystem.Migrations
                     b.ToTable("LeaveRequests");
                 });
 
+            modelBuilder.Entity("HRMSystem.Models.Notification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("HRMSystem.Models.NotificationRecipient", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("NotificationId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("NotificationId");
+
+                    b.ToTable("NotificationRecipients");
+                });
+
             modelBuilder.Entity("HRMSystem.Models.OvertimeRequest", b =>
                 {
                     b.Property<int>("Id")
@@ -451,6 +507,25 @@ namespace HRMSystem.Migrations
                     b.Navigation("ApprovedBy");
 
                     b.Navigation("Employees");
+                });
+
+            modelBuilder.Entity("HRMSystem.Models.NotificationRecipient", b =>
+                {
+                    b.HasOne("HRMSystem.Models.Employee", "Employees")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HRMSystem.Models.Notification", "Notifications")
+                        .WithMany()
+                        .HasForeignKey("NotificationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employees");
+
+                    b.Navigation("Notifications");
                 });
 
             modelBuilder.Entity("HRMSystem.Models.OvertimeRequest", b =>

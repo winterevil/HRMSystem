@@ -8,14 +8,18 @@ using HRMSystem.Repositories;
 
 namespace HRMSystem.Services
 {
-    public class DepartmentService:IDepartmentService
+    public class DepartmentService : IDepartmentService
     {
         private readonly IDepartmentRepository _repo;
+        private readonly IEmployeeRepository _employeeRepo;
         private readonly IMapper _mapper;
-        public DepartmentService(IDepartmentRepository repo, IMapper mapper)
+        private readonly INotificationService _notificationService;
+        public DepartmentService(IDepartmentRepository repo, IMapper mapper, INotificationService notificationService, IEmployeeRepository employeeRepo)
         {
             _repo = repo;
             _mapper = mapper;
+            _notificationService = notificationService;
+            _employeeRepo = employeeRepo;
         }
         public async Task<IEnumerable<DepartmentDto>> GetAllAsync(ClaimsPrincipal user)
         {
@@ -72,6 +76,14 @@ namespace HRMSystem.Services
             entity.CreatedAt = DateTime.UtcNow.AddHours(7);
             await _repo.AddAsync(entity);
             await _repo.SaveChangesAsync();
+            await _notificationService.NotifyByRolesAsync(
+                NotificationType.DepartmentCreated,
+                "New Department Created",
+                $"Department '{entity.DepartmentName}' has been created.",
+                "HR",
+                "Manager",
+                "Employee"
+            );
         }
         public async Task UpdateAsync(DepartmentDto dto, ClaimsPrincipal user)
         {

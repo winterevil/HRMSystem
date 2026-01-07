@@ -13,13 +13,15 @@ namespace HRMSystem.Services
         private readonly IRecruimentPositionRepository _positionRepo;
         private readonly IEmployeeRepository _employeeRepo;
         private readonly IJobPostRepository _jobPostRepo;
-        public RecruitmentRequirementService(IRecruitmentRequirementRepository repo, IMapper mapper, IRecruimentPositionRepository positionRepo, IEmployeeRepository employeeRepo, IJobPostRepository jobPostRepo)
+        private readonly INotificationService _notificationService;
+        public RecruitmentRequirementService(IRecruitmentRequirementRepository repo, IMapper mapper, IRecruimentPositionRepository positionRepo, IEmployeeRepository employeeRepo, IJobPostRepository jobPostRepo, INotificationService notificationService)
         {
             _repo = repo;
             _mapper = mapper;
             _positionRepo = positionRepo;
             _employeeRepo = employeeRepo;
             _jobPostRepo = jobPostRepo;
+            _notificationService = notificationService;
         }
         public async Task UpdateJobPostsStatusAsync(RecruitmentRequirement recruitment)
         {
@@ -70,6 +72,22 @@ namespace HRMSystem.Services
             _repo.Update(entity);
             await _repo.SaveChangesAsync();
             await UpdateJobPostsStatusAsync(entity);
+            var recipients = new List<int>
+            {
+                entity.EmployeeId 
+            };
+
+            var notiType = status == RecruitmentStatus.Approved
+                ? NotificationType.RecruitmentApproved
+                : NotificationType.RecruitmentRejected;
+
+            await _notificationService.CreateAsync(
+                notiType,
+                $"Recruitment {status}",
+                $"Your recruitment request for position '{entity.RecruitmentPositions.PositionName}' has been {status.ToString().ToLower()}.",
+                recipients
+            );
+
         }
 
         public async Task CreateAsync(RecruitmentRequirementDto dto, ClaimsPrincipal user)

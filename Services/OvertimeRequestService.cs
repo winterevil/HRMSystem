@@ -12,12 +12,15 @@ namespace HRMSystem.Services
         private readonly IEmployeeRepository _employeeRepo;
         private readonly ILeaveRequestRepository _leaveRequestRepo;
         private readonly IMapper _mapper;
-        public OvertimeRequestService(IOvertimeRequestRepository repo, IMapper mapper, IEmployeeRepository employeeRepo, ILeaveRequestRepository leaveRequestRepo)
+        private readonly INotificationService _notificationService;
+
+        public OvertimeRequestService(IOvertimeRequestRepository repo, IMapper mapper, IEmployeeRepository employeeRepo, ILeaveRequestRepository leaveRequestRepo, INotificationService notificationService)
         {
             _repo = repo;
             _mapper = mapper;
             _employeeRepo = employeeRepo;
             _leaveRequestRepo = leaveRequestRepo;
+            _notificationService = notificationService;
         }
 
         public async Task ApproveAsync(int id, OvertimeStatus status, ClaimsPrincipal user)
@@ -94,6 +97,17 @@ namespace HRMSystem.Services
 
             _repo.Update(entity);
             await _repo.SaveChangesAsync();
+
+            var notiType = status == OvertimeStatus.Approved
+                ? NotificationType.OvertimeApproved
+                : NotificationType.OvertimeRejected;
+
+            await _notificationService.CreateAsync(
+                notiType,
+                $"Overtime {status}",
+                $"Your overtime from {entity.StartTime:dd/MM HH:mm} to {entity.EndTime:dd/MM HH:mm} has been {status.ToString().ToLower()}.",
+                new List<int> { entity.EmployeeId } 
+            );
         }
 
         public async Task CreateAsync(OvertimeRequestDto dto, ClaimsPrincipal user)
