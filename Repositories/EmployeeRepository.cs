@@ -29,6 +29,7 @@ namespace HRMSystem.Repositories
             return await _context.Employees
                 .Include(e => e.EmployeeRoles)
                     .ThenInclude(er => er.Roles)
+                .Include(e => e.Departments)         
                 .Where(e =>
                     e.EmployeeRoles.Any(er => er.Roles.RoleName == roleName))
                 .ToListAsync();
@@ -44,6 +45,14 @@ namespace HRMSystem.Repositories
                     e.EmployeeRoles.Any(er => er.Roles.RoleName == "Manager"))
                 .ToListAsync();
         }
+        public async Task<bool> HasRoleAsync(int employeeId, string roleName)
+        {
+            return await _context.EmployeeRoles
+                .AnyAsync(er =>
+                    er.EmployeeId == employeeId &&
+                    er.Roles.RoleName == roleName);
+        }
+
     }
 
 }

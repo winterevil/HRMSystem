@@ -19,6 +19,10 @@ namespace HRMSystem.Data
         public DbSet<Role> Roles { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<NotificationRecipient> NotificationRecipients { get; set; }
+        public DbSet<Conversation> Conversations { get; set; }
+        public DbSet<Message> Messages { get; set; }
+        public DbSet<ConversationMember> ConversationMembers { get; set; }
+        public DbSet<ChatRequest> ChatRequests { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -54,13 +58,25 @@ namespace HRMSystem.Data
                 .HasOne(j => j.RecruitmentRequirements)
                 .WithMany(r => r.JobPosts)
                 .HasForeignKey(j => j.RequirementId)
-                .OnDelete(DeleteBehavior.Restrict);  
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<JobPost>()
                 .HasOne(j => j.PostedBy)
                 .WithMany(e => e.JobPosts)
                 .HasForeignKey(j => j.PostedById)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ChatRequest>()
+                .HasOne(cr => cr.FromEmployee)
+                .WithMany()
+                .HasForeignKey(cr => cr.FromEmployeeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ChatRequest>()
+                .HasOne(cr => cr.ToEmployee)
+                .WithMany()
+                .HasForeignKey(cr => cr.ToEmployeeId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
 
     }

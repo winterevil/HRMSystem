@@ -4,6 +4,7 @@ using HRMSystem.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HRMSystem.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260111023637_AddChatModule")]
+    partial class AddChatModule
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -77,10 +80,6 @@ namespace HRMSystem.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("FromEmployeeId");
-
-                    b.HasIndex("ToEmployeeId");
 
                     b.ToTable("ChatRequests");
                 });
@@ -350,12 +349,6 @@ namespace HRMSystem.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsRead")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("ReceiverId")
-                        .HasColumnType("int");
-
                     b.Property<int>("SenderId")
                         .HasColumnType("int");
 
@@ -549,25 +542,6 @@ namespace HRMSystem.Migrations
                         .IsRequired();
 
                     b.Navigation("Employees");
-                });
-
-            modelBuilder.Entity("HRMSystem.Models.ChatRequest", b =>
-                {
-                    b.HasOne("HRMSystem.Models.Employee", "FromEmployee")
-                        .WithMany()
-                        .HasForeignKey("FromEmployeeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("HRMSystem.Models.Employee", "ToEmployee")
-                        .WithMany()
-                        .HasForeignKey("ToEmployeeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("FromEmployee");
-
-                    b.Navigation("ToEmployee");
                 });
 
             modelBuilder.Entity("HRMSystem.Models.ConversationMember", b =>
