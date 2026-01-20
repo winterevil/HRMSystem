@@ -20,5 +20,7 @@ namespace HRMSystem.Data
         public DbSet<DeletedRecruitmentPosition> DeletedRecruitmentPositions { get; set; }
         public DbSet<DeletedRecruitmentRequirement> DeletedRecruitmentRequirements { get; set; }
         public DbSet<DeletedRole> DeletedRoles { get; set; }
+        public DbSet<DeletedNotification> DeletedNotifications { get; set; }
+        public DbSet<DeletedNotificationRecipient> DeletedNotificationRecipients { get; set; }
     }
 }

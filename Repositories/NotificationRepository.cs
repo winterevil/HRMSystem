@@ -7,10 +7,12 @@ namespace HRMSystem.Repositories
     public class NotificationRepository : INotificationRepository
     {
         private readonly AppDbContext _context;
+        private readonly DeletedDbContext _deletedContext;
 
-        public NotificationRepository(AppDbContext context)
+        public NotificationRepository(AppDbContext context, DeletedDbContext deletedContext)
         {
             _context = context;
+            _deletedContext = deletedContext;
         }    
         public async Task AddNotificationAsync(Notification notification)
         {
@@ -45,5 +47,47 @@ namespace HRMSystem.Repositories
             item.ReadAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
         }
+        public async Task ClearAllByEmployeeAsync(int employeeId, int deletedById)
+        {
+            var items = await _context.NotificationRecipients
+                .Include(x => x.Notifications)
+                .Where(x => x.EmployeeId == employeeId)
+                .ToListAsync();
+
+            if (!items.Any()) return;
+
+            var deletedNotifications = items
+                .Select(x => new DeletedNotification
+                {
+                    Id = x.Notifications.Id,
+                    Title = x.Notifications.Title,
+                    Content = x.Notifications.Content,
+                    Type = (int)x.Notifications.Type,
+                    CreatedAt = x.Notifications.CreatedAt,
+                    DeletedById = deletedById,
+                    DeletedAt = DateTime.UtcNow.AddHours(7)
+                })
+                .DistinctBy(x => x.Id)
+                .ToList();
+
+            var deletedRecipients = items.Select(x => new DeletedNotificationRecipient
+            {
+                Id = x.Id,
+                NotificationId = x.NotificationId,
+                EmployeeId = x.EmployeeId,
+                IsRead = x.IsRead,
+                ReadAt = x.ReadAt,
+                DeletedById = deletedById,
+                DeletedAt = DateTime.UtcNow.AddHours(7)
+            }).ToList();
+
+            _deletedContext.DeletedNotifications.AddRange(deletedNotifications);
+            _deletedContext.DeletedNotificationRecipients.AddRange(deletedRecipients);
+
+            _context.NotificationRecipients.RemoveRange(items);
+
+            await _context.SaveChangesAsync();
+        }
+
     }
 }

@@ -1,6 +1,8 @@
 ﻿using HRMSystem.DTOs;
+using HRMSystem.Helpers;
 using HRMSystem.Models;
 using HRMSystem.Repositories;
+using Microsoft.AspNetCore.SignalR;
 
 namespace HRMSystem.Services
 {
@@ -8,14 +10,20 @@ namespace HRMSystem.Services
     {
         private readonly INotificationRepository _repo;
         private readonly IEmployeeRepository _employeeRepo;
+        private readonly IHubContext<NotificationHub> _hub;
 
-        public NotificationService(INotificationRepository repo, IEmployeeRepository employeeRepo)
+        public NotificationService(INotificationRepository repo, IEmployeeRepository employeeRepo, IHubContext<NotificationHub> hub)
         {
             _repo = repo;
             _employeeRepo = employeeRepo;
+            _hub = hub;
         }
-        
-        public async Task CreateAsync(NotificationType type, string title, string content, List<int> employeeIds)
+
+        public async Task CreateAsync(
+            NotificationType type,
+            string title,
+            string content,
+            List<int> employeeIds)
         {
             var notification = new Notification
             {
@@ -27,14 +35,25 @@ namespace HRMSystem.Services
 
             await _repo.AddNotificationAsync(notification);
 
-            var recipients = employeeIds.Distinct().Select(x => new NotificationRecipient
+            var distinctEmployeeIds = employeeIds.Distinct().ToList();
+
+            var recipients = distinctEmployeeIds.Select(x => new NotificationRecipient
             {
                 NotificationId = notification.Id,
                 EmployeeId = x,
+                IsRead = false
             }).ToList();
 
             await _repo.AddRecipientsAsync(recipients);
+
+            foreach (var empId in distinctEmployeeIds)
+            {
+                await _hub.Clients
+                    .Group($"user_{empId}")
+                    .SendAsync("NewNotification");
+            }
         }
+
 
         public async Task<List<NotificationDto>> GetMyNotificationsAsync(int employeeId)
         {
@@ -67,5 +86,10 @@ namespace HRMSystem.Services
 
             await CreateAsync(type, title, content, employeeIds.Distinct().ToList());
         }
+        public async Task ClearMyNotificationsAsync(int employeeId)
+        {
+            await _repo.ClearAllByEmployeeAsync(employeeId, employeeId);
+        }
+
     }
 }

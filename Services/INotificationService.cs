@@ -9,5 +9,7 @@ namespace HRMSystem.Services
         Task MarkAsReadAsync(int notificationId, int employeeId);
         Task<List<NotificationDto>> GetMyNotificationsAsync(int employeeId);
         Task NotifyByRolesAsync(NotificationType type, string title, string content, params string[] roles);
+        Task ClearMyNotificationsAsync(int employeeId);
+
     }
 }

@@ -8,5 +8,7 @@ namespace HRMSystem.Repositories
         Task AddRecipientsAsync(List<NotificationRecipient> recipients);
         Task<List<NotificationRecipient>> GetByEmployeeAsync(int employeeId);
         Task MarkAsReadAsync(int notificationId, int employeeId);
+        Task ClearAllByEmployeeAsync(int employeeId, int deletedById);
+
     }
 }

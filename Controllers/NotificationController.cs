@@ -37,5 +37,16 @@ namespace HRMSystem.Controllers
             await _service.MarkAsReadAsync(id, employeeId);
             return Ok();
         }
+        [HttpPost("clear")]
+        public async Task<IActionResult> ClearMyNotifications()
+        {
+            var employeeId = int.Parse(
+                User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"
+            );
+
+            await _service.ClearMyNotificationsAsync(employeeId);
+            return Ok();
+        }
+
     }
 }
