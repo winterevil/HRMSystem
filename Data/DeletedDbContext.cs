@@ -12,6 +12,7 @@ namespace HRMSystem.Data
         {
             modelBuilder.Entity<DeletedEmployee>().ToTable("DeletedEmployees");
         }
+        public DbSet<DeletedEmployee> DeletedEmployees { get; set; }
         public DbSet<DeletedEmployeeRole> DeletedEmployeeRoles { get; set; }
         public DbSet<DeletedEmployeeType> DeletedEmployeeTypes { get; set; }
         public DbSet<DeletedJobPost> DeletedJobPosts { get; set; }

@@ -52,6 +52,16 @@ namespace HRMSystem.Repositories
                     er.EmployeeId == employeeId &&
                     er.Roles.RoleName == roleName);
         }
+        public async Task<IEnumerable<DeletedEmployee>> GetAllDeletedAsync()
+        {
+            return await _deletedContext.Set<DeletedEmployee>().ToListAsync();
+        }
+
+        public async Task<DeletedEmployee?> GetDeletedByIdAsync(int id)
+        {
+            return await _deletedContext.Set<DeletedEmployee>()
+                .FirstOrDefaultAsync(x => x.Id == id);
+        }
 
     }
 

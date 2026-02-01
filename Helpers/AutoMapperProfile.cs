@@ -16,10 +16,10 @@ namespace HRMSystem.Helpers
                 .ForMember(dest => dest.EmployeeTypeId,
                     opt => opt.MapFrom(src => src.EmployeeTypeId))
                 .ForMember(dest => dest.Status,
-                    opt => opt.MapFrom(src => src.Status));
+                    opt => opt.Ignore());
 
             CreateMap<EmployeeUpdateDto, Employee>()
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
+                .ForMember(dest => dest.Status, opt => opt.Ignore())
                 .ForMember(dest => dest.HashPassword, opt => opt.Ignore());
 
             CreateMap<Employee, EmployeeDto>()

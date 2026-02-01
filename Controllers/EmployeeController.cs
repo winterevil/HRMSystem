@@ -84,7 +84,7 @@ namespace HRMSystem.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> Update(EmployeeUpdateDto employeeDto)
+        public async Task<IActionResult> Update([FromBody] EmployeeUpdateDto employeeDto)
         {
             try
             {
@@ -126,5 +126,19 @@ namespace HRMSystem.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
+        [HttpGet("all-with-deleted")]
+        public async Task<IActionResult> GetAllWithDeleted()
+        {
+            var result = await _service.GetAllIncludeDeletedAsync(User);
+            return Ok(result);
+        }
+
+        [HttpPost("restore/{id}")]
+        public async Task<IActionResult> Restore(int id)
+        {
+            await _service.RestoreAsync(id, User);
+            return Ok("Employee restored successfully");
+        }
+
     }
 }

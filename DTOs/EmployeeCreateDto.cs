@@ -18,6 +18,6 @@ namespace HRMSystem.DTOs
         public int RoleId { get; set; }
         public int? DepartmentId { get; set; }
         public int? EmployeeTypeId { get; set; }
-        public EmployeeStatus Status { get; set; }
+        public string Status { get; set; }
     }
 }

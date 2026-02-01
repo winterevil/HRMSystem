@@ -19,6 +19,7 @@ namespace HRMSystem.Models
         public int Status { get; set; }
         public int DepartmentId { get; set; }
         public int EmployeeTypeId { get; set; }
+        public int RoleId { get; set; }
         public int DeletedById { get; set; }
         public DateTime DeletedAt { get; set; }
     }

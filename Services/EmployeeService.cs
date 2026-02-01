@@ -14,11 +14,13 @@ namespace HRMSystem.Services
         private readonly IEmployeeRepository _repo;
         private readonly IMapper _mapper;
         private readonly AppDbContext _context;
-        public EmployeeService(IEmployeeRepository repo, IMapper mapper, AppDbContext context)
+        private readonly DeletedDbContext _deletedContext;
+        public EmployeeService(IEmployeeRepository repo, IMapper mapper, AppDbContext context, DeletedDbContext deletedContext)
         {
             _repo = repo;
             _mapper = mapper;
             _context = context;
+            _deletedContext = deletedContext;
         }
         public async Task<IEnumerable<EmployeeDto>> GetAllAsync(EmployeeDto dto, ClaimsPrincipal user)
         {
@@ -159,6 +161,13 @@ namespace HRMSystem.Services
             }
 
             var employee = _mapper.Map<Employee>(dto);
+            if (!string.IsNullOrEmpty(dto.Status))
+            {
+                if (!Enum.TryParse<EmployeeStatus>(dto.Status, out var statusEnum))
+                    throw new InvalidOperationException("Invalid employee status.");
+
+                employee.Status = statusEnum;
+            }
             employee.HashPassword = new PasswordHasher<Employee>().HashPassword(employee, dto.Password);
             employee.CreatedAt = DateTime.UtcNow.AddHours(7);
             
@@ -271,8 +280,14 @@ namespace HRMSystem.Services
                 throw new UnauthorizedAccessException("You are not allowed to update this employee.");
             }
 
-
             _mapper.Map(dto, employee);
+            if (!string.IsNullOrEmpty(dto.Status))
+            {
+                if (!Enum.TryParse<EmployeeStatus>(dto.Status, out var statusEnum))
+                    throw new InvalidOperationException("Invalid employee status.");
+
+                employee.Status = statusEnum;
+            }
             _repo.Update(employee);
             await _repo.SaveChangesAsync();
 
@@ -291,25 +306,31 @@ namespace HRMSystem.Services
         {
             var currentRoles = user.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
 
-            Employee employee;
-            if (currentRoles.Contains("Admin") || currentRoles.Contains("HR"))
-            {
-                employee = await _repo.GetByIdAsync(id);
-            }
-            else
-            {
-                employee = null;
+            if (!currentRoles.Contains("Admin") && !currentRoles.Contains("HR"))
                 throw new UnauthorizedAccessException("You do not have permission to delete this employee.");
-            }
-            if (employee == null)
-            {
-                throw new InvalidOperationException("Employee not found.");
-            }
 
-            if (employee.EmployeeRoles != null && employee.EmployeeRoles.Any(er => er.Roles.RoleName == "Admin"))
-            {
+            var employee = await _repo.GetByIdAsync(id);
+            if (employee == null)
+                throw new InvalidOperationException("Employee not found.");
+
+            if (employee.EmployeeRoles != null &&
+                employee.EmployeeRoles.Any(er => er.Roles.RoleName == "Admin"))
                 throw new UnauthorizedAccessException("You are not allowed to delete the Admin account.");
-            }
+
+            var role = employee.EmployeeRoles?.FirstOrDefault();
+            if (role == null)
+                throw new InvalidOperationException("Employee has no role.");
+
+            bool hasRelation =
+                await _context.Attendance.AnyAsync(a => a.EmployeeId == id) ||
+                await _context.LeaveRequests.AnyAsync(l => l.EmployeeId == id) ||
+                await _context.OvertimeRequests.AnyAsync(o => o.EmployeeId == id);
+
+            if (hasRelation)
+                throw new InvalidOperationException(
+                    "Cannot delete employee because related records still exist."
+                );
+
             var deleted = new DeletedEmployee
             {
                 Id = employee.Id,
@@ -322,14 +343,164 @@ namespace HRMSystem.Services
                 Address = employee.Address,
                 CreatedAt = employee.CreatedAt,
                 Status = (int)employee.Status,
-                DepartmentId = (int)employee.DepartmentId,
-                EmployeeTypeId = (int)employee.EmployeeTypeId,
+                DepartmentId = employee.DepartmentId ?? 0,
+                EmployeeTypeId = employee.EmployeeTypeId ?? 0,
+                RoleId = role.RoleId,
                 DeletedAt = DateTime.UtcNow.AddHours(7),
-                DeletedById = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier))
+                DeletedById = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!)
             };
 
-            await _repo.DeleteWithArchiveAsync(employee, deleted);
-            await _repo.SaveChangesAsync();
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                _context.Employees.Remove(employee);
+                await _context.SaveChangesAsync();
+
+                await _deletedContext.DeletedEmployees.AddAsync(deleted);
+                await _deletedContext.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw new InvalidOperationException(
+                    "Delete failed. Employee still has related data."
+                );
+            }
         }
+
+        public async Task<IEnumerable<EmployeeWithDeletedDto>> GetAllIncludeDeletedAsync(ClaimsPrincipal user)
+        {
+            var roles = user.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
+            var userId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
+
+            IEnumerable<Employee> activeEmployees;
+
+            if (roles.Contains("Admin") || roles.Contains("HR"))
+            {
+                activeEmployees = await _repo.GetAllAsync();
+            }
+            else if (roles.Contains("Manager"))
+            {
+                var manager = await _context.Employees.FindAsync(userId);
+                activeEmployees = (await _repo.GetAllAsync())
+                    .Where(e => e.DepartmentId == manager!.DepartmentId);
+            }
+            else
+            {
+                var employee = await _repo.GetByIdAsync(userId);
+                activeEmployees = employee != null
+                    ? new List<Employee> { employee }
+                    : Enumerable.Empty<Employee>();
+            }
+
+            var result = new List<EmployeeWithDeletedDto>();
+
+            result.AddRange(activeEmployees.Select(e =>
+            {
+                var dto = _mapper.Map<EmployeeDto>(e);
+
+                return new EmployeeWithDeletedDto
+                {
+                    Id = dto.Id,
+                    FullName = dto.FullName,
+                    Email = dto.Email,
+                    Phone = dto.Phone,
+                    Address = dto.Address,
+                    DOB = dto.DOB,
+                    Gender = dto.Gender,
+                    DepartmentId = dto.DepartmentId,
+                    DepartmentName = dto.DepartmentName,
+                    EmployeeTypeId = dto.EmployeeTypeId,
+                    TypeName = dto.TypeName,
+                    RoleId = dto.RoleId,
+                    RoleName = dto.RoleName,
+                    Status = dto.Status,
+                    CreatedAt = dto.CreatedAt,
+                    IsDeleted = false
+                };
+            }));
+
+            if (roles.Contains("Admin") || roles.Contains("HR"))
+            {
+                var deletedEmployees = await _repo.GetAllDeletedAsync();
+
+                result.AddRange(deletedEmployees.Select(d => new EmployeeWithDeletedDto
+                {
+                    Id = d.Id,
+                    FullName = d.FullName,
+                    Email = d.Email,
+                    Phone = d.Phone,
+                    Address = d.Address,
+                    DOB = d.DOB,
+                    Gender = d.Gender,
+
+                    DepartmentId = d.DepartmentId,
+                    DepartmentName = "(Deleted)",
+
+                    EmployeeTypeId = d.EmployeeTypeId,
+                    TypeName = "(Deleted)",
+
+                    RoleId = d.RoleId,
+                    RoleName = "(Deleted)",
+
+                    Status = ((EmployeeStatus)d.Status).ToString(),
+                    CreatedAt = d.CreatedAt,
+
+                    IsDeleted = true,
+                    DeletedAt = d.DeletedAt,
+                    DeletedById = d.DeletedById
+                }));
+            }
+
+            return result;
+        }
+
+
+        public async Task RestoreAsync(int employeeId, ClaimsPrincipal user)
+        {
+            var roles = user.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
+
+            if (!roles.Contains("Admin") && !roles.Contains("HR"))
+                throw new UnauthorizedAccessException("You do not have permission to restore.");
+
+            var deleted = await _repo.GetDeletedByIdAsync(employeeId);
+            if (deleted == null)
+                throw new InvalidOperationException("Deleted employee not found.");
+
+            if (_context.Employees.Any(e => e.Email == deleted.Email))
+                throw new InvalidOperationException("Email already exists.");
+
+            var employee = new Employee
+            {
+                FullName = deleted.FullName,
+                Email = deleted.Email,
+                HashPassword = deleted.HashPassword,
+                Gender = deleted.Gender,
+                DOB = deleted.DOB,
+                Phone = deleted.Phone,
+                Address = deleted.Address,
+                CreatedAt = deleted.CreatedAt,
+                Status = (EmployeeStatus)deleted.Status,
+                DepartmentId = deleted.DepartmentId,
+                EmployeeTypeId = deleted.EmployeeTypeId
+            };
+
+            await _context.Employees.AddAsync(employee);
+            await _context.SaveChangesAsync(); 
+
+            _context.EmployeeRoles.Add(new EmployeeRole
+            {
+                EmployeeId = employee.Id, 
+                RoleId = deleted.RoleId
+            });
+
+            _deletedContext.Remove(deleted);
+
+            await _context.SaveChangesAsync();
+            await _deletedContext.SaveChangesAsync();
+        }
+
     }
 }
