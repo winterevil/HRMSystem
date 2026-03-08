@@ -520,6 +520,34 @@ namespace HRMSystem.Migrations
                     b.ToTable("RecruitmentRequirements");
                 });
 
+            modelBuilder.Entity("HRMSystem.Models.RefreshToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ExpiryDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsRevoked")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.ToTable("RefreshTokens");
+                });
+
             modelBuilder.Entity("HRMSystem.Models.Role", b =>
                 {
                     b.Property<int>("Id")
@@ -736,6 +764,17 @@ namespace HRMSystem.Migrations
                     b.Navigation("Employees");
 
                     b.Navigation("RecruitmentPositions");
+                });
+
+            modelBuilder.Entity("HRMSystem.Models.RefreshToken", b =>
+                {
+                    b.HasOne("HRMSystem.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
                 });
 
             modelBuilder.Entity("HRMSystem.Models.Conversation", b =>
